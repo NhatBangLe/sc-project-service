@@ -362,7 +362,7 @@ class StageControllerTests extends ProjectServiceApplicationTests {
                 .pathParam("stageId", "ff394849-1f55-4b8b-bf56-956c43cfff56")
                 .delete("/stage/{stageId}")
                 .then()
-                .statusCode(204);
+                .statusCode(404);
     }
 
     @Test
@@ -373,9 +373,9 @@ class StageControllerTests extends ProjectServiceApplicationTests {
                     "description": "Some description",
                     "startDate": "2024-07-23",
                     "endDate": "2024-07-24",
-                    "formId": "ff394849-1f55-4b8b-bf56-956c43cfff56",
+                    "formId": "%s",
                     "projectOwnerId": "%s"
-                }""".formatted(projectId);
+                }""".formatted(formId, projectId);
         var stageId = given(requestSpecification)
                 .body(requestBody)
                 .post("/stage")

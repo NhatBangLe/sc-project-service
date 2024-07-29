@@ -71,7 +71,34 @@ public class StageService {
 
     public void updateStage(@NotNull String stageId, @NotNull StageUpdateRequest stageUpdateRequest)
             throws NoEntityFoundException, IllegalAttributeException {
+        var stage = findStage(stageId);
+        String name = stageUpdateRequest.name(),
+                description = stageUpdateRequest.description();
+        if (name != null) {
+            if (name.isBlank() || name.isEmpty())
+                throw new IllegalAttributeException("Stage name cannot be null/empty/blank");
+            stage.setName(name);
+        }
+        if (description != null) stage.setDescription(description);
 
+        LocalDate startDate = stageUpdateRequest.startDate(),
+                endDate = stageUpdateRequest.endDate();
+        if (startDate != null) stage.setStartDate(startDate);
+        if (endDate != null) stage.setEndDate(endDate);
+        if ((startDate != null && startDate.isAfter(stage.getEndDate()))
+            || (endDate != null && endDate.isBefore(stage.getStartDate())))
+            throw new IllegalAttributeException("Start date of the stage cannot be greater than end date");
+
+        var formId = stageUpdateRequest.formId();
+        if (formId != null) {
+            if (formId.isBlank() || formId.isEmpty())
+                throw new IllegalAttributeException("Form ID cannot be null/empty/blank");
+            var form = formRepository.findById(formId)
+                    .orElseThrow(() -> new NoEntityFoundException("Form ID is not available, input ID: " + formId));
+            stage.setForm(form);
+        }
+
+        stageRepository.save(stage);
     }
 
     public void deleteStage(@NotNull String stageId) throws NoEntityFoundException {
