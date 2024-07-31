@@ -1,4 +1,4 @@
-package com.microservices.projectservice.dto;
+package com.microservices.projectservice.dto.request;
 
 import com.microservices.projectservice.constant.ProjectMemberOperator;
 

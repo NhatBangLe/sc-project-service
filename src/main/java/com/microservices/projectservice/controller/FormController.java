@@ -1,9 +1,10 @@
 package com.microservices.projectservice.controller;
 
-import com.microservices.projectservice.dto.FormCreateRequest;
-import com.microservices.projectservice.dto.FormResponse;
-import com.microservices.projectservice.dto.FormUpdateRequest;
+import com.microservices.projectservice.dto.request.FormCreateRequest;
+import com.microservices.projectservice.dto.response.FormResponse;
+import com.microservices.projectservice.dto.request.FormUpdateRequest;
 import com.microservices.projectservice.service.FormService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping(path = "/api/${api.version}/form")
 @RequiredArgsConstructor
@@ -19,6 +22,23 @@ import org.springframework.web.bind.annotation.*;
 public class FormController {
 
     private final FormService formService;
+
+    @GetMapping(path = "/{projectId}/project")
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(description = "Get all forms own by project having the projectId.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid page number or page size.",
+                    content = @Content
+            ),
+            @ApiResponse(responseCode = "404", description = "Project ID is not available.", content = @Content)
+    })
+    public List<FormResponse> getAllForms(@PathVariable String projectId,
+                                          @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
+                                          @RequestParam(required = false, defaultValue = "6") Integer pageSize) {
+        return formService.getAllForms(projectId, pageNumber, pageSize);
+    }
 
     @GetMapping(path = "/{formId}")
     @ResponseStatus(HttpStatus.OK)

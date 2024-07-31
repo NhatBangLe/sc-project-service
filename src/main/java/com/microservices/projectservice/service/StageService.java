@@ -1,9 +1,8 @@
 package com.microservices.projectservice.service;
 
-import com.microservices.projectservice.dto.StageCreateRequest;
-import com.microservices.projectservice.dto.StageResponse;
-import com.microservices.projectservice.dto.StageUpdateRequest;
-import com.microservices.projectservice.entity.Form;
+import com.microservices.projectservice.dto.request.StageCreateRequest;
+import com.microservices.projectservice.dto.response.StageResponse;
+import com.microservices.projectservice.dto.request.StageUpdateRequest;
 import com.microservices.projectservice.entity.Stage;
 import com.microservices.projectservice.exception.IllegalAttributeException;
 import com.microservices.projectservice.exception.NoEntityFoundException;
@@ -12,9 +11,11 @@ import com.microservices.projectservice.repository.ProjectRepository;
 import com.microservices.projectservice.repository.StageRepository;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -109,5 +110,28 @@ public class StageService {
     private Stage findStage(@NotNull String stageId) throws NoEntityFoundException {
         return stageRepository.findById(stageId)
                 .orElseThrow(() -> new NoEntityFoundException("No stage found with id: " + stageId));
+    }
+
+    public List<StageResponse> getAllStages(@NotNull String projectId,
+                                            @NotNull Integer pageNumber,
+                                            @NotNull Integer pageSize) {
+        if (pageNumber < 0 || pageSize <= 0)
+            throw new IllegalAttributeException("Invalid page number or page size");
+        var pageable = PageRequest.of(pageNumber, pageSize);
+
+        var project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
+
+        return stageRepository.findAllByProjectOwner(project, pageable).stream().map(
+                stage -> new StageResponse(
+                        stage.getId(),
+                        stage.getName(),
+                        stage.getDescription(),
+                        stage.getStartDate(),
+                        stage.getEndDate(),
+                        stage.getForm().getId(),
+                        project.getId()
+                )
+        ).toList();
     }
 }

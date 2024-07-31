@@ -1,9 +1,9 @@
 package com.microservices.projectservice.service;
 
-import com.microservices.projectservice.dto.ProjectCreateRequest;
-import com.microservices.projectservice.dto.ProjectMemberRequest;
-import com.microservices.projectservice.dto.ProjectResponse;
-import com.microservices.projectservice.dto.ProjectUpdateRequest;
+import com.microservices.projectservice.dto.request.ProjectCreateRequest;
+import com.microservices.projectservice.dto.request.ProjectMemberRequest;
+import com.microservices.projectservice.dto.response.ProjectResponse;
+import com.microservices.projectservice.dto.request.ProjectUpdateRequest;
 import com.microservices.projectservice.entity.Project;
 import com.microservices.projectservice.entity.User;
 import com.microservices.projectservice.exception.*;
@@ -11,9 +11,11 @@ import com.microservices.projectservice.repository.ProjectRepository;
 import com.microservices.projectservice.repository.UserRepository;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -116,4 +118,30 @@ public class ProjectService {
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
     }
+
+    public List<ProjectResponse> getAllProjects(@NotNull String userId,
+                                                @NotNull Integer pageNumber,
+                                                @NotNull Integer pageSize)
+            throws IllegalAttributeException, NoEntityFoundException {
+        if (pageNumber < 0 || pageSize <= 0)
+            throw new IllegalAttributeException("Invalid page number or page size");
+        var pageable = PageRequest.of(pageNumber, pageSize);
+
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoEntityFoundException("No user found with id: " + userId));
+
+        return projectRepository.findAllByOwner(user, pageable).stream().map(project -> {
+            var memberIds = project.getMembers().parallelStream().map(User::getId).toList();
+            return new ProjectResponse(
+                    project.getId(),
+                    project.getName(),
+                    project.getDescription(),
+                    project.getStartDate(),
+                    project.getEndDate(),
+                    user.getId(),
+                    memberIds
+            );
+        }).toList();
+    }
+
 }

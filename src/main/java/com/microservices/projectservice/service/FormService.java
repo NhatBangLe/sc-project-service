@@ -1,8 +1,8 @@
 package com.microservices.projectservice.service;
 
-import com.microservices.projectservice.dto.FormCreateRequest;
-import com.microservices.projectservice.dto.FormResponse;
-import com.microservices.projectservice.dto.FormUpdateRequest;
+import com.microservices.projectservice.dto.request.FormCreateRequest;
+import com.microservices.projectservice.dto.response.FormResponse;
+import com.microservices.projectservice.dto.request.FormUpdateRequest;
 import com.microservices.projectservice.entity.Form;
 import com.microservices.projectservice.entity.Stage;
 import com.microservices.projectservice.exception.IllegalAttributeException;
@@ -11,7 +11,10 @@ import com.microservices.projectservice.repository.FormRepository;
 import com.microservices.projectservice.repository.ProjectRepository;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -78,6 +81,29 @@ public class FormService {
     private Form findForm(@NotNull String formId) throws NoEntityFoundException {
         return formRepository.findById(formId)
                 .orElseThrow(() -> new NoEntityFoundException("No form found with id: " + formId));
+    }
+
+    public List<FormResponse> getAllForms(@NotNull String projectId,
+                                          @NotNull Integer pageNumber,
+                                          @NotNull Integer pageSize)
+            throws IllegalAttributeException, NoEntityFoundException {
+        if (pageNumber < 0 || pageSize <= 0)
+            throw new IllegalAttributeException("Invalid page number or page size");
+        var pageable = PageRequest.of(pageNumber, pageSize);
+
+        var projectOwner = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
+
+        return formRepository.findAllByProjectOwner(projectOwner, pageable).stream().map(form -> {
+            var usageStageIds = form.getUsageStages().parallelStream().map(Stage::getId).toList();
+            return new FormResponse(
+                    form.getId(),
+                    form.getTitle(),
+                    form.getDescription(),
+                    form.getProjectOwner().getId(),
+                    usageStageIds
+            );
+        }).toList();
     }
 
 }

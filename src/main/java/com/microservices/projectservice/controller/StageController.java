@@ -1,9 +1,10 @@
 package com.microservices.projectservice.controller;
 
-import com.microservices.projectservice.dto.StageCreateRequest;
-import com.microservices.projectservice.dto.StageResponse;
-import com.microservices.projectservice.dto.StageUpdateRequest;
+import com.microservices.projectservice.dto.request.StageCreateRequest;
+import com.microservices.projectservice.dto.response.StageResponse;
+import com.microservices.projectservice.dto.request.StageUpdateRequest;
 import com.microservices.projectservice.service.StageService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping(path = "/api/${api.version}/stage")
 @RequiredArgsConstructor
@@ -19,6 +22,23 @@ import org.springframework.web.bind.annotation.*;
 public class StageController {
 
     private final StageService stageService;
+
+    @GetMapping(path = "/{projectId}/project")
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(description = "Get all stages own by project having the projectId.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid page number or page size.",
+                    content = @Content
+            ),
+            @ApiResponse(responseCode = "404", description = "Project ID is not available.", content = @Content)
+    })
+    public List<StageResponse> getAllStages(@PathVariable String projectId,
+                                                @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
+                                                @RequestParam(required = false, defaultValue = "6") Integer pageSize) {
+        return stageService.getAllStages(projectId, pageNumber, pageSize);
+    }
 
     @GetMapping(path = "/{stageId}")
     @ResponseStatus(HttpStatus.OK)

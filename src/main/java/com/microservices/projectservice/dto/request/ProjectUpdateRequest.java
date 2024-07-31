@@ -1,4 +1,4 @@
-package com.microservices.projectservice.dto;
+package com.microservices.projectservice.dto.request;
 
 import java.io.Serializable;
 import java.time.LocalDate;
