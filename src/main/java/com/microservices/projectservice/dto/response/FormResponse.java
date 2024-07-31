@@ -1,4 +1,4 @@
-package com.microservices.projectservice.dto;
+package com.microservices.projectservice.dto.response;
 
 import java.io.Serializable;
 import java.util.List;
