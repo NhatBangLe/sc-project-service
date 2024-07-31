@@ -4,8 +4,10 @@ import com.microservices.projectservice.dto.FormCreateRequest;
 import com.microservices.projectservice.dto.FormResponse;
 import com.microservices.projectservice.dto.FormUpdateRequest;
 import com.microservices.projectservice.service.FormService;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -13,13 +15,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping(path = "/api/${api.version}/form")
 @RequiredArgsConstructor
+@Tag(name = "Form", description = "All endpoints about forms.")
 public class FormController {
 
     private final FormService formService;
 
     @GetMapping(path = "/{formId}")
     @ResponseStatus(HttpStatus.OK)
-    @ApiResponse(responseCode = "404", description = "Form ID is not available")
+    @ApiResponse(responseCode = "404", description = "Form ID is not available.", content = @Content)
     public FormResponse getForm(@PathVariable String formId) {
         return formService.getForm(formId);
     }
@@ -27,10 +30,19 @@ public class FormController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "404", description = "Project owner ID is not available"),
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Form created successfully. Response: The ID of the created stage."
+            ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Project owner ID is null/empty/blank or Form title is null/empty/blank"
+                    description = "Project owner ID or Form title is null/empty/blank.",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Project owner ID is not available.",
+                    content = @Content
             )
     })
     public String createForm(@RequestBody FormCreateRequest formCreateRequest) {
@@ -39,13 +51,30 @@ public class FormController {
 
     @PatchMapping(path = "/{formId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Stage updated successfully."),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Form title is empty/blank."
+            ),
+            @ApiResponse(responseCode = "404", description = "Form ID is not available.")
+    })
     public void updateForm(@PathVariable String formId, @RequestBody FormUpdateRequest formUpdateRequest) {
         formService.updateForm(formId, formUpdateRequest);
     }
 
     @DeleteMapping(path = "/{formId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @ApiResponse(responseCode = "404", description = "Form ID is not available")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Form deleted successfully."
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Form ID is not available."
+            )
+    })
     public void deleteForm(@PathVariable String formId) {
         formService.deleteForm(formId);
     }

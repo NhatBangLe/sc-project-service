@@ -48,8 +48,8 @@ public class ProjectService {
 
         LocalDate startDate = projectCreateRequest.startDate(),
                 endDate = projectCreateRequest.endDate();
-        if (startDate == null || endDate == null || startDate.isAfter(endDate))
-            throw new IllegalAttributeException("startDate and endDate cannot be acceptable");
+        if (startDate != null && endDate != null && startDate.isAfter(endDate))
+            throw new IllegalAttributeException("Project start date cannot be greater than end date");
 
         var projectBuilder = Project.builder().name(projectName)
                 .description(projectCreateRequest.description())
@@ -85,7 +85,7 @@ public class ProjectService {
         if (endDate != null) project.setEndDate(endDate);
         if ((startDate != null && startDate.isAfter(project.getEndDate()))
             || (endDate != null && endDate.isBefore(project.getStartDate())))
-            throw new IllegalAttributeException("startDate cannot be greater than endDate");
+            throw new IllegalAttributeException("Project start date cannot be greater than end date");
 
         projectRepository.save(project);
     }

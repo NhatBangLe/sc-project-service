@@ -7,6 +7,7 @@ import com.microservices.projectservice.service.StageService;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping(path = "/api/${api.version}/stage")
 @RequiredArgsConstructor
+@Tag(name = "Stage", description = "All endpoints about stages.")
 public class StageController {
 
     private final StageService stageService;
@@ -51,21 +53,13 @@ public class StageController {
     @PatchMapping(path = "/{stageId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "Stage updated successfully. No content return."
-            ),
+            @ApiResponse(responseCode = "204", description = "Form updated successfully."),
             @ApiResponse(
                     responseCode = "400",
                     description = "Stage name or Form ID is empty/blank. " +
-                                  "Otherwise, stage start date is greater than end date.",
-                    content = @Content
+                                  "Otherwise, stage start date is greater than end date."
             ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Form ID is not available.",
-                    content = @Content
-            )
+            @ApiResponse(responseCode = "404", description = "Form ID is not available.")
     })
     public void updateStage(@PathVariable String stageId, @RequestBody StageUpdateRequest stageUpdateRequest) {
         stageService.updateStage(stageId, stageUpdateRequest);
@@ -76,12 +70,11 @@ public class StageController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "204",
-                    description = "Stage deleted successfully. No content return."
+                    description = "Stage deleted successfully."
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "Stage ID is not available.",
-                    content = @Content
+                    description = "Stage ID is not available."
             )
     })
     public void deleteStage(@PathVariable String stageId) {
