@@ -1,5 +1,6 @@
 package com.microservices.projectservice.controller;
 
+import com.microservices.projectservice.constant.ProjectStatus;
 import com.microservices.projectservice.dto.request.ProjectCreateRequest;
 import com.microservices.projectservice.dto.request.ProjectMemberRequest;
 import com.microservices.projectservice.dto.request.ProjectUpdateRequest;
@@ -26,7 +27,7 @@ public class ProjectController {
 
     @GetMapping(path = "/{userId}/user")
     @ResponseStatus(HttpStatus.OK)
-    @Operation(description = "Get all projects own by user having the userId.")
+    @Operation(description = "Get all projects owned/joined by user having the userId.")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "400",
@@ -35,10 +36,14 @@ public class ProjectController {
             ),
             @ApiResponse(responseCode = "404", description = "User ID is not available.", content = @Content)
     })
-    public List<ProjectResponse> getAllProjects(@PathVariable String userId,
-                                                @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
-                                                @RequestParam(required = false, defaultValue = "6") Integer pageSize) {
-        return projectService.getAllProjects(userId, pageNumber, pageSize);
+    public List<ProjectResponse> getAllProjects(
+            @PathVariable String userId,
+            @RequestParam(required = false, defaultValue = "true") boolean isOwner,
+            @RequestParam(required = false, defaultValue = "NORMAL") ProjectStatus status,
+            @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
+            @RequestParam(required = false, defaultValue = "6") Integer pageSize) {
+        return isOwner ? projectService.getAllOwnProjects(userId, status, pageNumber, pageSize)
+                : projectService.getAllJoinProjects(userId, status, pageNumber, pageSize);
     }
 
     @GetMapping(path = "/{projectId}")
