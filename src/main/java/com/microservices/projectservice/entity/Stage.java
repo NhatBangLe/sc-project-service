@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -11,14 +12,14 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "stage")
+@Table(name = "STAGE")
 public class Stage {
     @Id
-    @Column(nullable = false, length = 36)
+    @Column(length = 36)
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column
+    @Column(nullable = false)
     private String name;
 
     @Column
@@ -38,4 +39,6 @@ public class Stage {
     @JoinColumn(name = "fk_project_id", nullable = false, referencedColumnName = "id")
     private Project projectOwner;
 
+    @OneToMany(mappedBy = "stage")
+    private List<Sample> samples;
 }
