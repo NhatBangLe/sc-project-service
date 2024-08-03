@@ -23,6 +23,30 @@ public class FormService {
     private final FormRepository formRepository;
     private final ProjectRepository projectRepository;
 
+
+    public List<FormResponse> getAllForms(@NotNull String projectId,
+                                          @NotNull Integer pageNumber,
+                                          @NotNull Integer pageSize)
+            throws IllegalAttributeException, NoEntityFoundException {
+        if (pageNumber < 0 || pageSize <= 0)
+            throw new IllegalAttributeException("Invalid page number or page size");
+        var pageable = PageRequest.of(pageNumber, pageSize);
+
+        var projectOwner = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
+
+        return formRepository.findAllByProjectOwner(projectOwner, pageable).stream().map(form -> {
+            var usageStageIds = form.getUsageStages().parallelStream().map(Stage::getId).toList();
+            return new FormResponse(
+                    form.getId(),
+                    form.getTitle(),
+                    form.getDescription(),
+                    form.getProjectOwner().getId(),
+                    usageStageIds
+            );
+        }).toList();
+    }
+
     public FormResponse getForm(@NotNull String formId) throws NoEntityFoundException {
         var form = findForm(formId);
         var usageStageIds = form.getUsageStages().stream().map(Stage::getId).toList();
@@ -81,29 +105,6 @@ public class FormService {
     private Form findForm(@NotNull String formId) throws NoEntityFoundException {
         return formRepository.findById(formId)
                 .orElseThrow(() -> new NoEntityFoundException("No form found with id: " + formId));
-    }
-
-    public List<FormResponse> getAllForms(@NotNull String projectId,
-                                          @NotNull Integer pageNumber,
-                                          @NotNull Integer pageSize)
-            throws IllegalAttributeException, NoEntityFoundException {
-        if (pageNumber < 0 || pageSize <= 0)
-            throw new IllegalAttributeException("Invalid page number or page size");
-        var pageable = PageRequest.of(pageNumber, pageSize);
-
-        var projectOwner = projectRepository.findById(projectId)
-                .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
-
-        return formRepository.findAllByProjectOwner(projectOwner, pageable).stream().map(form -> {
-            var usageStageIds = form.getUsageStages().parallelStream().map(Stage::getId).toList();
-            return new FormResponse(
-                    form.getId(),
-                    form.getTitle(),
-                    form.getDescription(),
-                    form.getProjectOwner().getId(),
-                    usageStageIds
-            );
-        }).toList();
     }
 
 }
