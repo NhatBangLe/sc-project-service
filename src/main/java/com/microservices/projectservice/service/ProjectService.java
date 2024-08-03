@@ -33,6 +33,34 @@ public class ProjectService {
         return mapProjectToResponse(project);
     }
 
+    public List<ProjectResponse> getAllOwnProjects(@NotNull String userId,
+                                                   @NotNull ProjectStatus status,
+                                                   @NotNull Integer pageNumber,
+                                                   @NotNull Integer pageSize)
+            throws IllegalAttributeException, NoEntityFoundException {
+        var pageable = createPageable(pageNumber, pageSize);
+        var user = findUser(userId);
+
+        return projectRepository.findAllByOwner(user, pageable).stream()
+                .filter(project -> project.getStatus().equals(status))
+                .map(this::mapProjectToResponse)
+                .toList();
+    }
+
+    public List<ProjectResponse> getAllJoinProjects(@NotNull String userId,
+                                                    @NotNull ProjectStatus status,
+                                                    @NotNull Integer pageNumber,
+                                                    @NotNull Integer pageSize)
+            throws IllegalAttributeException, NoEntityFoundException {
+        var pageable = createPageable(pageNumber, pageSize);
+        var user = findUser(userId);
+
+        return projectRepository.findAllByMembersContains(user, pageable).stream()
+                .filter(project -> project.getStatus().equals(status))
+                .map(this::mapProjectToResponse)
+                .toList();
+    }
+
     public String createProject(@NotNull ProjectCreateRequest projectCreateRequest) throws IllegalAttributeException {
         String projectName = projectCreateRequest.name(),
                 ownerId = projectCreateRequest.ownerId();
@@ -49,7 +77,8 @@ public class ProjectService {
         var projectBuilder = Project.builder().name(projectName)
                 .description(projectCreateRequest.description())
                 .startDate(startDate)
-                .endDate(endDate);
+                .endDate(endDate)
+                .status(ProjectStatus.NORMAL);
         userRepository.findById(ownerId)
                 .ifPresentOrElse(projectBuilder::owner,
                         () -> projectBuilder.owner(User.builder().id(ownerId).build()));
@@ -112,34 +141,6 @@ public class ProjectService {
     public void deleteProject(@NotNull String projectId) throws NoEntityFoundException {
         var project = findProject(projectId);
         projectRepository.delete(project);
-    }
-
-    public List<ProjectResponse> getAllOwnProjects(@NotNull String userId,
-                                                   @NotNull ProjectStatus status,
-                                                   @NotNull Integer pageNumber,
-                                                   @NotNull Integer pageSize)
-            throws IllegalAttributeException, NoEntityFoundException {
-        var pageable = createPageable(pageNumber, pageSize);
-        var user = findUser(userId);
-
-        return projectRepository.findAllByOwner(user, pageable).stream()
-                .filter(project -> project.getStatus().equals(status))
-                .map(this::mapProjectToResponse)
-                .toList();
-    }
-
-    public List<ProjectResponse> getAllJoinProjects(@NotNull String userId,
-                                                    @NotNull ProjectStatus status,
-                                                    @NotNull Integer pageNumber,
-                                                    @NotNull Integer pageSize)
-            throws IllegalAttributeException, NoEntityFoundException {
-        var pageable = createPageable(pageNumber, pageSize);
-        var user = findUser(userId);
-
-        return projectRepository.findAllByMembersContains(user, pageable).stream()
-                .filter(project -> project.getStatus().equals(status))
-                .map(this::mapProjectToResponse)
-                .toList();
     }
 
     private Project findProject(@NotNull String projectId) throws NoEntityFoundException {
