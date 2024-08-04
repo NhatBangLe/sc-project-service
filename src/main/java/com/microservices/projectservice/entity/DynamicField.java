@@ -1,12 +1,14 @@
 package com.microservices.projectservice.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(name = "DYNAMIC_FIELD")
 public class DynamicField {
     @Id
