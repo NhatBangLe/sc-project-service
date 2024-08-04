@@ -22,14 +22,14 @@ public class FieldService {
     private final FieldRepository fieldRepository;
     private final FormRepository formRepository;
 
-    public List<FieldResponse> getAllFields(@NotNull String formId) {
+    public List<FieldResponse> getAllFields(@NotNull String formId) throws NoEntityFoundException {
         var form = findForm(formId);
         return fieldRepository.findAllByFormOrderByNumberOrderAsc(form).parallelStream()
                 .map(this::mapFieldToResponse)
                 .toList();
     }
 
-    public FieldResponse getField(@NotNull String fieldId) {
+    public FieldResponse getField(@NotNull String fieldId) throws NoEntityFoundException {
         var field = findField(fieldId);
         return mapFieldToResponse(field);
     }
@@ -71,12 +71,12 @@ public class FieldService {
         fieldRepository.save(field);
     }
 
-    public void deleteField(@NotNull String fieldId) {
+    public void deleteField(@NotNull String fieldId) throws NoEntityFoundException {
         var field = findField(fieldId);
         fieldRepository.delete(field);
     }
 
-    private Field findField(@NotNull String fieldId) {
+    private Field findField(@NotNull String fieldId) throws NoEntityFoundException {
         return fieldRepository.findById(fieldId)
                 .orElseThrow(() -> new NoEntityFoundException("No field found with id: " + fieldId));
     }
