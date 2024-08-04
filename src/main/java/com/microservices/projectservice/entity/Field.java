@@ -23,7 +23,7 @@ public class Field {
     private Integer numberOrder;
 
     @Column(nullable = false)
-    private String content;
+    private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_form_id", nullable = false, referencedColumnName = "id")

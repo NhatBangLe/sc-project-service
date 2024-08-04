@@ -47,7 +47,7 @@ public class FieldService {
         if (numberOrder == null) numberOrder = 0;
 
         var field = Field.builder()
-                .content(fieldName)
+                .name(fieldName)
                 .numberOrder(numberOrder)
                 .form(form)
                 .build();
@@ -62,7 +62,7 @@ public class FieldService {
         if (fieldName != null) {
             if (fieldName.isEmpty() || fieldName.isBlank())
                 throw new IllegalAttributeException("Field name cannot be empty/blank");
-            field.setContent(fieldName);
+            field.setName(fieldName);
         }
 
         var numberOrder = fieldUpdateRequest.numberOrder();
@@ -90,7 +90,7 @@ public class FieldService {
         return new FieldResponse(
                 field.getId(),
                 field.getNumberOrder(),
-                field.getContent(),
+                field.getName(),
                 field.getForm().getId()
         );
     }

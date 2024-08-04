@@ -1,7 +1,7 @@
 CREATE TABLE project.answer
 (
     fk_sample_id VARCHAR(36)  NOT NULL,
-    content      VARCHAR(255) NOT NULL,
+    value      VARCHAR(255) NOT NULL,
     fk_field_id  VARCHAR(36)  NOT NULL,
     CONSTRAINT pk_answer PRIMARY KEY (fk_sample_id)
 );
@@ -20,7 +20,7 @@ CREATE TABLE project.field
 (
     id           VARCHAR(36)   NOT NULL,
     number_order INT DEFAULT 0 NOT NULL,
-    content      VARCHAR(255)  NOT NULL,
+    name      VARCHAR(255)  NOT NULL,
     fk_form_id   VARCHAR(36)   NOT NULL,
     CONSTRAINT pk_field PRIMARY KEY (id)
 );

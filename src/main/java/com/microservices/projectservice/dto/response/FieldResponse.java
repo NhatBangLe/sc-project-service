@@ -7,6 +7,6 @@ import java.io.Serializable;
  */
 public record FieldResponse(String id,
                             Integer numberOrder,
-                            String content,
+                            String name,
                             String formId) implements Serializable {
 }

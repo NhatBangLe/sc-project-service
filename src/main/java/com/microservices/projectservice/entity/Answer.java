@@ -18,7 +18,7 @@ import lombok.*;
 )
 public class Answer {
     @Column(nullable = false)
-    private String content;
+    private String value;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_field_id", nullable = false, referencedColumnName = "id")
