@@ -47,7 +47,7 @@ public class FieldController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Field name is null/empty/blank.",
+                    description = "Field name is null/blank.",
                     content = @Content
             ),
             @ApiResponse(
@@ -56,7 +56,8 @@ public class FieldController {
                     content = @Content
             )
     })
-    public String createField(@PathVariable String formId, @RequestBody FieldCreateRequest fieldCreateRequest) {
+    public String createField(@PathVariable String formId,
+                              @RequestBody FieldCreateRequest fieldCreateRequest) {
         return fieldService.createField(formId, fieldCreateRequest);
     }
 
@@ -69,7 +70,7 @@ public class FieldController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Field name is null/empty/blank.",
+                    description = "Field name is blank.",
                     content = @Content
             ),
             @ApiResponse(
@@ -108,7 +109,7 @@ public class FieldController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Field name is null/empty/blank.",
+                    description = "Field name is null/blank.",
                     content = @Content
             ),
             @ApiResponse(
@@ -131,7 +132,7 @@ public class FieldController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Field ID or Field name is empty/blank.",
+                    description = "Field ID or Field name is blank.",
                     content = @Content
             ),
             @ApiResponse(

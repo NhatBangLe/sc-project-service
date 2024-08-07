@@ -27,7 +27,7 @@ public class ProjectController {
 
     @GetMapping(path = "/{userId}/user")
     @ResponseStatus(HttpStatus.OK)
-    @Operation(description = "Get all projects owned/joined by user having the userId.")
+    @Operation(description = "Get all projects own/join by user having the userId.")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "400",
@@ -62,7 +62,7 @@ public class ProjectController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Project name or Owner ID is null/empty/blank.",
+                    description = "Project name or Owner ID is null/blank.",
                     content = @Content
             )
     })
@@ -76,7 +76,7 @@ public class ProjectController {
             @ApiResponse(responseCode = "204", description = "Project updated successfully."),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Project name is empty/blank or Start date is greater than end date."
+                    description = "Project name is blank or Start date is greater than end date."
             ),
             @ApiResponse(responseCode = "404", description = "Project ID is not available.")
     })
@@ -91,7 +91,7 @@ public class ProjectController {
                     responseCode = "204",
                     description = "Project member updated successfully."
             ),
-            @ApiResponse(responseCode = "400", description = "Member ID is null/empty/blank or Invalid operator."),
+            @ApiResponse(responseCode = "400", description = "Member ID is null/blank or Invalid operator."),
             @ApiResponse(responseCode = "404", description = "Project ID is not available.")
     })
     public void updateProjectMember(@PathVariable String projectId, @RequestBody ProjectMemberRequest projectMemberRequest) {

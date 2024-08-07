@@ -3,21 +3,28 @@ package com.microservices.projectservice.service;
 import com.microservices.projectservice.dto.request.StageCreateRequest;
 import com.microservices.projectservice.dto.response.StageResponse;
 import com.microservices.projectservice.dto.request.StageUpdateRequest;
+import com.microservices.projectservice.entity.Form;
+import com.microservices.projectservice.entity.Project;
 import com.microservices.projectservice.entity.Stage;
 import com.microservices.projectservice.exception.IllegalAttributeException;
 import com.microservices.projectservice.exception.NoEntityFoundException;
 import com.microservices.projectservice.repository.FormRepository;
 import com.microservices.projectservice.repository.ProjectRepository;
 import com.microservices.projectservice.repository.StageRepository;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Service
+@Validated
 @RequiredArgsConstructor
 public class StageService {
 
@@ -25,8 +32,123 @@ public class StageService {
     private final ProjectRepository projectRepository;
     private final FormRepository formRepository;
 
-    public StageResponse getStage(@NotNull String stageId) throws NoEntityFoundException {
+    public List<StageResponse> getAllStages(
+            @NotBlank(message = "Project ID cannot be null/blank when getting all stages.") String projectId,
+            @Min(value = 0, message = "Invalid page number (must positive) when getting all stages.")
+            @NotNull(message = "Page number cannot be null when getting all stages.")
+            Integer pageNumber,
+            @Min(value = 1, message = "Invalid page size (must greater than 0) when getting all stages.")
+            @NotNull(message = "Page size cannot be null when getting all stages.")
+            Integer pageSize
+    ) {
+        var pageable = PageRequest.of(pageNumber, pageSize);
+        var project = findProject(projectId);
+        return stageRepository.findAllByProjectOwner(project, pageable).stream()
+                .map(this::mapStageToResponse)
+                .toList();
+    }
+
+    public StageResponse getStage(
+            @NotBlank(message = "Stage ID cannot be null/blank when getting a stage.") String stageId
+    ) throws NoEntityFoundException {
         var stage = findStage(stageId);
+        return mapStageToResponse(stage);
+    }
+
+    public String createStage(
+            @NotNull(message = "The creating stage data cannot be null.")
+            @Valid
+            StageCreateRequest stageCreateRequest
+    ) throws NoEntityFoundException, IllegalAttributeException {
+        LocalDate startDate = stageCreateRequest.startDate(),
+                endDate = stageCreateRequest.endDate();
+        if (startDate != null && endDate != null && startDate.isAfter(endDate))
+            throw new IllegalAttributeException("Stage start date cannot be after end date.");
+
+        var project = findProject(stageCreateRequest.projectOwnerId());
+        var stageBuilder = Stage.builder()
+                .name(stageCreateRequest.name())
+                .description(stageCreateRequest.description())
+                .startDate(startDate)
+                .endDate(endDate)
+                .projectOwner(project);
+
+        var formId = stageCreateRequest.formId();
+        if (formId != null && !formId.isBlank()) {
+            var form = findForm(formId);
+            stageBuilder.form(form);
+        }
+
+        return stageRepository.save(stageBuilder.build()).getId();
+    }
+
+    public void updateStage(
+            @NotBlank(message = "Stage ID cannot be null/blank when updating a stage.") String stageId,
+            @NotNull(message = "The updating stage data cannot be null.")
+            StageUpdateRequest stageUpdateRequest
+    ) throws NoEntityFoundException, IllegalAttributeException {
+        var isUpdated = false;
+        var stage = findStage(stageId);
+        String name = stageUpdateRequest.name(),
+                description = stageUpdateRequest.description();
+        if (name != null) {
+            if (name.isBlank()) throw new IllegalAttributeException("Stage name cannot be null/blank.");
+            stage.setName(name);
+            isUpdated = true;
+        }
+        if (description != null) {
+            stage.setDescription(description);
+            isUpdated = true;
+        }
+
+        var startDate = stageUpdateRequest.startDate();
+        var endDate = stageUpdateRequest.endDate();
+        if (startDate != null) {
+            stage.setStartDate(startDate);
+            isUpdated = true;
+        }
+        if (endDate != null) {
+            stage.setEndDate(endDate);
+            isUpdated = true;
+        }
+        if ((startDate != null && startDate.isAfter(stage.getEndDate()))
+            || (endDate != null && endDate.isBefore(stage.getStartDate())))
+            throw new IllegalAttributeException("Stage start date cannot be after end date.");
+
+        var formId = stageUpdateRequest.formId();
+        if (formId != null) {
+            if (formId.isBlank()) throw new IllegalAttributeException("Form ID cannot be null/blank");
+            var form = findForm(formId);
+            stage.setForm(form);
+            isUpdated = true;
+        }
+
+        if (isUpdated) stageRepository.save(stage);
+    }
+
+    public void deleteStage(
+            @NotBlank(message = "Stage ID cannot be null/blank when deleting a stage.") String stageId
+    ) throws NoEntityFoundException {
+        var stage = findStage(stageId);
+        stageRepository.delete(stage);
+    }
+
+    private Project findProject(String projectId) throws NoEntityFoundException {
+        return projectRepository.findById(projectId)
+                .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
+    }
+
+    private Stage findStage(String stageId) throws NoEntityFoundException {
+        return stageRepository.findById(stageId)
+                .orElseThrow(() -> new NoEntityFoundException("No stage found with id: " + stageId));
+    }
+
+    private Form findForm(String formId) throws NoEntityFoundException {
+        return formRepository.findById(formId)
+                .orElseThrow(() -> new NoEntityFoundException("No form found with id: " + formId));
+    }
+
+    private StageResponse mapStageToResponse(Stage stage) {
         return new StageResponse(
                 stage.getId(),
                 stage.getName(),
@@ -36,102 +158,5 @@ public class StageService {
                 stage.getForm().getId(),
                 stage.getProjectOwner().getId()
         );
-    }
-
-    public String createStage(@NotNull StageCreateRequest stageCreateRequest)
-            throws NoEntityFoundException, IllegalAttributeException {
-        var name = stageCreateRequest.name();
-        if (name == null || name.isBlank() || name.isEmpty())
-            throw new IllegalAttributeException("Stage name cannot be null/empty/blank");
-
-        LocalDate startDate = stageCreateRequest.startDate(),
-                endDate = stageCreateRequest.endDate();
-        if (startDate != null && endDate != null && startDate.isAfter(endDate))
-            throw new IllegalAttributeException("Start date cannot be after end date");
-
-        var formId = stageCreateRequest.formId();
-        if (formId == null || formId.isBlank() || formId.isEmpty())
-            throw new IllegalAttributeException("Form ID cannot be null/empty/blank");
-        var form = formRepository.findById(formId)
-                .orElseThrow(() -> new NoEntityFoundException("Form ID is not available, input ID: " + formId));
-
-        var projectOwnerId = stageCreateRequest.projectOwnerId();
-        if (projectOwnerId == null || projectOwnerId.isBlank() || projectOwnerId.isEmpty())
-            throw new IllegalAttributeException("Project owner ID cannot be null/empty/blank");
-        var project = projectRepository.findById(projectOwnerId)
-                .orElseThrow(() -> new NoEntityFoundException("Project owner ID is not available, input ID: " + projectOwnerId));
-
-        var stage = Stage.builder()
-                .name(name)
-                .description(stageCreateRequest.description())
-                .form(form)
-                .projectOwner(project)
-                .build();
-        return stageRepository.save(stage).getId();
-    }
-
-    public void updateStage(@NotNull String stageId, @NotNull StageUpdateRequest stageUpdateRequest)
-            throws NoEntityFoundException, IllegalAttributeException {
-        var stage = findStage(stageId);
-        String name = stageUpdateRequest.name(),
-                description = stageUpdateRequest.description();
-        if (name != null) {
-            if (name.isBlank() || name.isEmpty())
-                throw new IllegalAttributeException("Stage name cannot be null/empty/blank");
-            stage.setName(name);
-        }
-        if (description != null) stage.setDescription(description);
-
-        LocalDate startDate = stageUpdateRequest.startDate(),
-                endDate = stageUpdateRequest.endDate();
-        if (startDate != null) stage.setStartDate(startDate);
-        if (endDate != null) stage.setEndDate(endDate);
-        if ((startDate != null && startDate.isAfter(stage.getEndDate()))
-            || (endDate != null && endDate.isBefore(stage.getStartDate())))
-            throw new IllegalAttributeException("Start date of the stage cannot be greater than end date");
-
-        var formId = stageUpdateRequest.formId();
-        if (formId != null) {
-            if (formId.isBlank() || formId.isEmpty())
-                throw new IllegalAttributeException("Form ID cannot be null/empty/blank");
-            var form = formRepository.findById(formId)
-                    .orElseThrow(() -> new NoEntityFoundException("Form ID is not available, input ID: " + formId));
-            stage.setForm(form);
-        }
-
-        stageRepository.save(stage);
-    }
-
-    public void deleteStage(@NotNull String stageId) throws NoEntityFoundException {
-        var stage = findStage(stageId);
-        stageRepository.delete(stage);
-    }
-
-    private Stage findStage(@NotNull String stageId) throws NoEntityFoundException {
-        return stageRepository.findById(stageId)
-                .orElseThrow(() -> new NoEntityFoundException("No stage found with id: " + stageId));
-    }
-
-    public List<StageResponse> getAllStages(@NotNull String projectId,
-                                            @NotNull Integer pageNumber,
-                                            @NotNull Integer pageSize) {
-        if (pageNumber < 0 || pageSize <= 0)
-            throw new IllegalAttributeException("Invalid page number or page size");
-        var pageable = PageRequest.of(pageNumber, pageSize);
-
-        var project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
-
-        return stageRepository.findAllByProjectOwner(project, pageable).stream().map(
-                stage -> new StageResponse(
-                        stage.getId(),
-                        stage.getName(),
-                        stage.getDescription(),
-                        stage.getStartDate(),
-                        stage.getEndDate(),
-                        stage.getForm().getId(),
-                        project.getId()
-                )
-        ).toList();
     }
 }

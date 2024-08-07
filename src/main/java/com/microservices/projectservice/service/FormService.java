@@ -4,34 +4,41 @@ import com.microservices.projectservice.dto.request.FormCreateRequest;
 import com.microservices.projectservice.dto.response.FormResponse;
 import com.microservices.projectservice.dto.request.FormUpdateRequest;
 import com.microservices.projectservice.entity.Form;
+import com.microservices.projectservice.entity.Project;
 import com.microservices.projectservice.entity.Stage;
 import com.microservices.projectservice.exception.IllegalAttributeException;
 import com.microservices.projectservice.exception.NoEntityFoundException;
 import com.microservices.projectservice.repository.FormRepository;
 import com.microservices.projectservice.repository.ProjectRepository;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
 @Service
+@Validated
 @RequiredArgsConstructor
 public class FormService {
 
     private final FormRepository formRepository;
     private final ProjectRepository projectRepository;
 
-
-    public List<FormResponse> getAllForms(@NotNull String projectId,
-                                          @NotNull Integer pageNumber,
-                                          @NotNull Integer pageSize)
-            throws IllegalAttributeException, NoEntityFoundException {
-        if (pageNumber < 0 || pageSize <= 0)
-            throw new IllegalAttributeException("Invalid page number or page size");
+    public List<FormResponse> getAllForms(
+            @NotBlank(message = "Project ID cannot be null/blank when getting all forms.") String projectId,
+            @Min(value = 0, message = "Invalid page number (must positive) when getting all forms.")
+            @NotNull(message = "Page number cannot be null when getting all forms.")
+            Integer pageNumber,
+            @Min(value = 1, message = "Invalid page size (must greater than 0) when getting all forms.")
+            @NotNull(message = "Page size cannot be null when getting all forms.")
+            Integer pageSize
+    ) throws NoEntityFoundException {
         var pageable = PageRequest.of(pageNumber, pageSize);
-
         var projectOwner = projectRepository.findById(projectId)
                 .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
 
@@ -47,7 +54,9 @@ public class FormService {
         }).toList();
     }
 
-    public FormResponse getForm(@NotNull String formId) throws NoEntityFoundException {
+    public FormResponse getForm(
+            @NotBlank(message = "Form ID cannot be null/blank when getting a form.") String formId
+    ) throws NoEntityFoundException {
         var form = findForm(formId);
         var usageStageIds = form.getUsageStages().stream().map(Stage::getId).toList();
 
@@ -60,51 +69,60 @@ public class FormService {
         );
     }
 
-    public String createForm(@NotNull FormCreateRequest formCreateRequest)
-            throws IllegalAttributeException, NoEntityFoundException {
-        var title = formCreateRequest.title();
-        if (title == null || title.isEmpty() || title.isBlank())
-            throw new IllegalAttributeException("Form title cannot be null/empty/blank");
-
-        var projectOwnerId = formCreateRequest.projectOwnerId();
-        if (projectOwnerId == null || projectOwnerId.isEmpty() || projectOwnerId.isBlank())
-            throw new IllegalAttributeException("Project owner ID cannot be null/empty/blank");
-        var project = projectRepository.findById(projectOwnerId)
-                .orElseThrow(() -> new NoEntityFoundException("Project owner ID is not available, input ID: " + projectOwnerId));
-
+    public String createForm(
+            @NotNull(message = "Creating form data cannot be null.")
+            @Valid
+            FormCreateRequest formCreateRequest
+    ) throws NoEntityFoundException {
+        var project = findProject(formCreateRequest.projectOwnerId());
         var form = Form.builder()
-                .title(title)
+                .title(formCreateRequest.title())
                 .description(formCreateRequest.description())
                 .projectOwner(project)
                 .build();
         return formRepository.save(form).getId();
     }
 
-    public void updateForm(@NotNull String formId, @NotNull FormUpdateRequest formUpdateRequest)
-            throws NoEntityFoundException, IllegalAttributeException {
+    public void updateForm(
+            @NotBlank(message = "Form ID cannot be null/blank when updating a form.") String formId,
+            @NotNull(message = "Updating form data cannot be null.")
+            @Valid
+            FormUpdateRequest formUpdateRequest
+    ) throws IllegalAttributeException, NoEntityFoundException {
+        var isUpdate = false;
         var form = findForm(formId);
 
         var title = formUpdateRequest.title();
         if (title != null) {
-            if (title.isBlank() || title.isEmpty())
-                throw new IllegalAttributeException("Form title cannot be null/empty/blank");
+            if (title.isBlank()) throw new IllegalAttributeException("Form title cannot be blank.");
             form.setTitle(title);
+            isUpdate = true;
         }
 
         var description = formUpdateRequest.description();
-        if (description != null) form.setDescription(description);
+        if (description != null) {
+            form.setDescription(description);
+            isUpdate = true;
+        }
 
-        formRepository.save(form);
+        if (isUpdate) formRepository.save(form);
     }
 
-    public void deleteForm(@NotNull String formId) throws NoEntityFoundException {
+    public void deleteForm(
+            @NotBlank(message = "Form ID cannot be null/blank when updating a form.") String formId
+    ) throws NoEntityFoundException {
         var form = findForm(formId);
         formRepository.delete(form);
     }
 
-    private Form findForm(@NotNull String formId) throws NoEntityFoundException {
+    private Form findForm(String formId) throws NoEntityFoundException {
         return formRepository.findById(formId)
                 .orElseThrow(() -> new NoEntityFoundException("No form found with id: " + formId));
+    }
+
+    private Project findProject(String projectId) throws NoEntityFoundException {
+        return projectRepository.findById(projectId)
+                .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
     }
 
 }

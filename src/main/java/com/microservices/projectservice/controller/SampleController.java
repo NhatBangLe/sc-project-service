@@ -1,6 +1,6 @@
 package com.microservices.projectservice.controller;
 
-import com.microservices.projectservice.dto.request.AnswerUpdateRequest;
+import com.microservices.projectservice.dto.request.AnswerUpsertRequest;
 import com.microservices.projectservice.dto.request.SampleCreateRequest;
 import com.microservices.projectservice.dto.request.SampleUpdateRequest;
 import com.microservices.projectservice.dto.response.SampleResponse;
@@ -61,7 +61,7 @@ public class SampleController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Project owner ID, Stage ID or some Field IDs may be null/empty/blank.",
+                    description = "Project owner ID, Stage ID or some Field IDs may be null/blank.",
                     content = @Content
             ),
             @ApiResponse(
@@ -96,7 +96,7 @@ public class SampleController {
         sampleService.updateSample(sampleId, sampleUpdateRequest);
     }
 
-    @PatchMapping(path = "/answer")
+    @PatchMapping(path = "/{sampleId}/answer")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ApiResponses(value = {
             @ApiResponse(
@@ -114,10 +114,8 @@ public class SampleController {
                     content = @Content
             )
     })
-    public void updateAnswer(@RequestParam String sampleId,
-                             @RequestParam String fieldId,
-                             @RequestBody AnswerUpdateRequest answerUpdateRequest) {
-        sampleService.updateAnswer(sampleId, fieldId, answerUpdateRequest);
+    public void updateAnswer(@PathVariable String sampleId, @RequestBody AnswerUpsertRequest answerUpsertRequest) {
+        sampleService.updateAnswer(sampleId, answerUpsertRequest);
     }
 
     @DeleteMapping(path = "/{sampleId}")

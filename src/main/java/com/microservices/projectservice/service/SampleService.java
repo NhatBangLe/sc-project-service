@@ -1,6 +1,6 @@
 package com.microservices.projectservice.service;
 
-import com.microservices.projectservice.dto.request.AnswerUpdateRequest;
+import com.microservices.projectservice.dto.request.AnswerUpsertRequest;
 import com.microservices.projectservice.dto.request.SampleCreateRequest;
 import com.microservices.projectservice.dto.request.SampleUpdateRequest;
 import com.microservices.projectservice.dto.response.FieldResponse;
@@ -8,19 +8,23 @@ import com.microservices.projectservice.dto.response.SampleResponse;
 import com.microservices.projectservice.entity.*;
 import com.microservices.projectservice.entity.answer.Answer;
 import com.microservices.projectservice.entity.answer.AnswerPK;
-import com.microservices.projectservice.exception.IllegalAttributeException;
 import com.microservices.projectservice.exception.NoEntityFoundException;
 import com.microservices.projectservice.repository.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Validated
 @RequiredArgsConstructor
 public class SampleService {
 
@@ -32,9 +36,13 @@ public class SampleService {
     private final DynamicFieldRepository dynamicFieldRepository;
 
     public List<SampleResponse> getAllSamplesByProjectId(
-            @NotNull(message = "Project ID cannot be null when finding all samples") String projectId,
-            @NotNull(message = "Page number cannot be null when finding all samples") Integer pageNumber,
-            @NotNull(message = "Page size cannot be null when finding all samples") Integer pageSize
+            @NotBlank(message = "Project ID cannot be null/blank when getting all samples.") String projectId,
+            @Min(value = 0, message = "Invalid page number (must positive) when getting all samples.")
+            @NotNull(message = "Page number cannot be null when finding all samples.")
+            Integer pageNumber,
+            @Min(value = 1, message = "Invalid page size (must greater than 0) when getting all samples.")
+            @NotNull(message = "Page size cannot be null when finding all samples.")
+            Integer pageSize
     ) throws NoEntityFoundException {
         var project = findProject(projectId);
         var pageable = PageRequest.of(pageNumber, pageSize);
@@ -47,9 +55,13 @@ public class SampleService {
     }
 
     public List<SampleResponse> getAllSamplesByStageId(
-            @NotNull(message = "Stage ID cannot be null when finding all samples") String stageId,
-            @NotNull(message = "Page number cannot be null when finding all samples") Integer pageNumber,
-            @NotNull(message = "Page size cannot be null when finding all samples") Integer pageSize
+            @NotBlank(message = "Stage ID cannot be null/blank when getting all samples.") String stageId,
+            @Min(value = 0, message = "Invalid page number (must positive) when getting all samples.")
+            @NotNull(message = "Page number cannot be null when finding all samples.")
+            Integer pageNumber,
+            @Min(value = 1, message = "Invalid page size (must greater than 0) when getting all samples.")
+            @NotNull(message = "Page size cannot be null when finding all samples.")
+            Integer pageSize
     ) throws NoEntityFoundException {
         var stage = findStage(stageId);
         var pageable = PageRequest.of(pageNumber, pageSize);
@@ -62,15 +74,17 @@ public class SampleService {
     }
 
     public SampleResponse getSample(
-            @NotNull(message = "Sample ID cannot be null when finding a specific sample") String sampleId
+            @NotBlank(message = "Sample ID cannot be null/blank when getting a sample.") String sampleId
     ) throws NoEntityFoundException {
         var sample = findSample(sampleId);
         return mapSampleToResponse(sample);
     }
 
     public String createSample(
-            @NotNull(message = "The creating sample data cannot be null") SampleCreateRequest sampleCreateRequest
-    ) throws IllegalAttributeException, NoEntityFoundException {
+            @NotNull(message = "The creating sample data cannot be null.")
+            @Valid
+            SampleCreateRequest sampleCreateRequest
+    ) throws NoEntityFoundException {
         var project = findProject(sampleCreateRequest.projectOwnerId());
         var stage = findStage(sampleCreateRequest.stageId());
 
@@ -115,9 +129,9 @@ public class SampleService {
     }
 
     public void updateSample(
-            @NotNull(message = "Sample ID cannot be null when updating a specific sample") String sampleId,
-            @NotNull(message = "The updating sample data cannot be null") SampleUpdateRequest sampleUpdateRequest
-    ) throws IllegalAttributeException, NoEntityFoundException {
+            @NotBlank(message = "Sample ID cannot be null when updating a sample.") String sampleId,
+            @NotNull(message = "The updating sample data cannot be null.") SampleUpdateRequest sampleUpdateRequest
+    ) throws NoEntityFoundException {
         var sample = findSample(sampleId);
         var position = sampleUpdateRequest.position();
         if (position != null) {
@@ -127,60 +141,49 @@ public class SampleService {
     }
 
     public void updateAnswer(
-            @NotNull(message = "Sample ID cannot be null when updating a answer") String sampleId,
-            @NotNull(message = "Field ID cannot be null when updating a answer") String fieldId,
-            @NotNull(message = "The updating answer data cannot be null")
-            AnswerUpdateRequest answerUpdateRequest
-    ) throws IllegalAttributeException, NoEntityFoundException {
-        if (sampleId == null || sampleId.isBlank() || sampleId.isEmpty())
-            throw new IllegalAttributeException("Sample ID cannot be null/empty/blank");
-        if (fieldId == null || fieldId.isBlank() || fieldId.isEmpty())
-            throw new IllegalAttributeException("Field ID cannot be null/empty/blank");
-
+            @NotBlank(message = "Sample ID cannot be null/blank when updating a answer.") String sampleId,
+            @NotNull(message = "The updating answer data cannot be null.")
+            @Valid
+            AnswerUpsertRequest answerUpsertRequest
+    ) throws NoEntityFoundException {
+        String fieldId = answerUpsertRequest.fieldId(),
+                value = answerUpsertRequest.value();
         var answerPK = new AnswerPK(sampleId, fieldId);
         var answer = answerRepository.findById(answerPK)
                 .orElseThrow(() -> new NoEntityFoundException("Answer not found with sample ID: " + sampleId
                                                               + " and field ID: " + fieldId));
-        var value = answerUpdateRequest.value();
-        if (value == null) throw new IllegalAttributeException("Answer value cannot be null");
         answer.setValue(value);
         answerRepository.save(answer);
     }
 
-    public void deleteSample(@NotNull String fieldId) throws NoEntityFoundException {
-        var sample = findSample(fieldId);
+    public void deleteSample(
+            @NotBlank(message = "Sample ID cannot be null/blank when deleting a answer.") String sampleId
+    ) throws NoEntityFoundException {
+        var sample = findSample(sampleId);
         sampleRepository.delete(sample);
     }
 
-    private Project findProject(@NotNull String projectId) throws IllegalAttributeException, NoEntityFoundException {
-        if (projectId == null || projectId.isEmpty() || projectId.isBlank())
-            throw new IllegalAttributeException("Project owner ID cannot be null/empty/blank");
+    private Project findProject(String projectId) throws NoEntityFoundException {
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
     }
 
-    private Stage findStage(@NotNull String stageId) throws IllegalAttributeException, NoEntityFoundException {
-        if (stageId == null || stageId.isEmpty() || stageId.isBlank())
-            throw new IllegalAttributeException("Stage ID cannot be null/empty/blank");
+    private Stage findStage(String stageId) throws NoEntityFoundException {
         return stageRepository.findById(stageId)
                 .orElseThrow(() -> new NoEntityFoundException("No stage found with id: " + stageId));
     }
 
-    private Field findField(@NotNull String fieldId) throws IllegalAttributeException, NoEntityFoundException {
-        if (fieldId == null || fieldId.isEmpty() || fieldId.isBlank())
-            throw new IllegalAttributeException("Field ID cannot be null/empty/blank");
+    private Field findField(String fieldId) throws NoEntityFoundException {
         return fieldRepository.findById(fieldId)
                 .orElseThrow(() -> new NoEntityFoundException("No field found with id: " + fieldId));
     }
 
-    private Sample findSample(@NotNull String sampleId) throws IllegalAttributeException, NoEntityFoundException {
-        if (sampleId == null || sampleId.isEmpty() || sampleId.isBlank())
-            throw new IllegalAttributeException("Sample ID cannot be null/empty/blank");
+    private Sample findSample(String sampleId) throws NoEntityFoundException {
         return sampleRepository.findById(sampleId)
                 .orElseThrow(() -> new NoEntityFoundException("No sample found with id: " + sampleId));
     }
 
-    private SampleResponse mapSampleToResponse(@NotNull Sample sample) {
+    private SampleResponse mapSampleToResponse(Sample sample) {
         var answers = sample.getAnswers().stream()
                 .map(answer -> {
                     var field = answer.getField();

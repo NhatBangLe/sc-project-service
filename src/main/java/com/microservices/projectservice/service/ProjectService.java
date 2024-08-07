@@ -10,18 +10,22 @@ import com.microservices.projectservice.entity.User;
 import com.microservices.projectservice.exception.*;
 import com.microservices.projectservice.repository.ProjectRepository;
 import com.microservices.projectservice.repository.UserRepository;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Validated
 @RequiredArgsConstructor
 public class ProjectService {
 
@@ -33,11 +37,16 @@ public class ProjectService {
         return mapProjectToResponse(project);
     }
 
-    public List<ProjectResponse> getAllOwnProjects(@NotNull String userId,
-                                                   @NotNull ProjectStatus status,
-                                                   @NotNull Integer pageNumber,
-                                                   @NotNull Integer pageSize)
-            throws IllegalAttributeException, NoEntityFoundException {
+    public List<ProjectResponse> getAllOwnProjects(
+            @NotBlank(message = "User ID cannot be null/blank when getting all own projects.") String userId,
+            @NotNull(message = "Project status cannot be null when getting all own projects.") ProjectStatus status,
+            @Min(value = 0, message = "Invalid page number (must positive) when getting all own projects.")
+            @NotNull(message = "Page number cannot be null when getting all own projects.")
+            Integer pageNumber,
+            @Min(value = 1, message = "Invalid page size (must greater than 0) when getting all own projects.")
+            @NotNull(message = "Page size cannot be null when getting all own projects.")
+            Integer pageSize
+    ) throws NoEntityFoundException {
         var pageable = createPageable(pageNumber, pageSize);
         var user = findUser(userId);
 
@@ -47,11 +56,16 @@ public class ProjectService {
                 .toList();
     }
 
-    public List<ProjectResponse> getAllJoinProjects(@NotNull String userId,
-                                                    @NotNull ProjectStatus status,
-                                                    @NotNull Integer pageNumber,
-                                                    @NotNull Integer pageSize)
-            throws IllegalAttributeException, NoEntityFoundException {
+    public List<ProjectResponse> getAllJoinProjects(
+            @NotBlank(message = "User ID cannot be null/blank when getting all join projects.") String userId,
+            @NotNull(message = "Project status cannot be null when getting all join projects.") ProjectStatus status,
+            @Min(value = 0, message = "Invalid page number (must positive) when getting all join projects.")
+            @NotNull(message = "Page number cannot be null when getting all join projects.")
+            Integer pageNumber,
+            @Min(value = 1, message = "Invalid page size (must greater than 0) when getting all join projects.")
+            @NotNull(message = "Page size cannot be null when getting all join projects.")
+            Integer pageSize
+    ) throws NoEntityFoundException {
         var pageable = createPageable(pageNumber, pageSize);
         var user = findUser(userId);
 
@@ -61,27 +75,26 @@ public class ProjectService {
                 .toList();
     }
 
-    public String createProject(@NotNull ProjectCreateRequest projectCreateRequest) throws IllegalAttributeException {
-        String projectName = projectCreateRequest.name(),
-                ownerId = projectCreateRequest.ownerId();
-        if (projectName == null || projectName.isEmpty() || projectName.isBlank())
-            throw new IllegalAttributeException("Project name cannot be empty");
-        if (ownerId == null || ownerId.isEmpty() || ownerId.isBlank())
-            throw new IllegalAttributeException("Owner ID cannot be empty");
-
+    public String createProject(
+            @NotNull(message = "Creating project data cannot be null.")
+            @Valid ProjectCreateRequest projectCreateRequest
+    ) throws IllegalAttributeException {
         LocalDate startDate = projectCreateRequest.startDate(),
                 endDate = projectCreateRequest.endDate();
         if (startDate != null && endDate != null && startDate.isAfter(endDate))
-            throw new IllegalAttributeException("Project start date cannot be greater than end date");
+            throw new IllegalAttributeException("Project start date cannot be greater than end date.");
 
-        var projectBuilder = Project.builder().name(projectName)
+        String userOwnerId = projectCreateRequest.ownerId();
+
+        var projectBuilder = Project.builder().name(projectCreateRequest.name())
                 .description(projectCreateRequest.description())
                 .startDate(startDate)
                 .endDate(endDate)
                 .status(ProjectStatus.NORMAL);
-        userRepository.findById(ownerId)
-                .ifPresentOrElse(projectBuilder::owner,
-                        () -> projectBuilder.owner(User.builder().id(ownerId).build()));
+        userRepository.findById(userOwnerId).ifPresentOrElse(
+                projectBuilder::owner,
+                () -> projectBuilder.owner(User.builder().id(userOwnerId).build())
+        );
         var memberIds = projectCreateRequest.memberIds();
         if (memberIds != null)
             projectBuilder.members(memberIds.stream()
@@ -91,76 +104,83 @@ public class ProjectService {
         return projectRepository.save(projectBuilder.build()).getId();
     }
 
-    public void updateProject(@NotNull String projectId, @NotNull ProjectUpdateRequest projectUpdateRequest)
-            throws NoEntityFoundException, IllegalAttributeException {
+    public void updateProject(
+            @NotBlank(message = "Project ID cannot be null/blank when updating a project.") String projectId,
+            @NotNull(message = "Updating project data cannot be null.") ProjectUpdateRequest projectUpdateRequest
+    ) throws IllegalAttributeException, NoEntityFoundException {
+        var isUpdated = false;
         var project = findProject(projectId);
 
         String name = projectUpdateRequest.name(),
                 description = projectUpdateRequest.description();
         if (name != null) {
-            if (name.isBlank() || name.isEmpty()) throw new IllegalAttributeException("Project name cannot be empty");
+            if (name.isBlank()) throw new IllegalAttributeException("Project name cannot be empty.");
             project.setName(name);
+            isUpdated = true;
         }
         if (description != null) project.setDescription(description);
 
         var status = projectUpdateRequest.status();
         if (status != null) {
-            if (!Arrays.asList(ProjectStatus.values()).contains(status))
-                throw new IllegalAttributeException("Invalid project status");
             project.setStatus(status);
+            isUpdated = true;
         }
 
         LocalDate startDate = projectUpdateRequest.startDate(),
                 endDate = projectUpdateRequest.endDate();
-        if (startDate != null) project.setStartDate(startDate);
-        if (endDate != null) project.setEndDate(endDate);
+        if (startDate != null) {
+            project.setStartDate(startDate);
+            isUpdated = true;
+        }
+        if (endDate != null) {
+            project.setEndDate(endDate);
+            isUpdated = true;
+        }
         if ((startDate != null && startDate.isAfter(project.getEndDate()))
             || (endDate != null && endDate.isBefore(project.getStartDate())))
-            throw new IllegalAttributeException("Project start date cannot be greater than end date");
+            throw new IllegalAttributeException("Project start date cannot be greater than end date.");
 
-        projectRepository.save(project);
+        if (isUpdated) projectRepository.save(project);
     }
 
-    public void updateMember(@NotNull String projectId, @NotNull ProjectMemberRequest projectMemberRequest)
-            throws NoEntityFoundException, IllegalAttributeException, UnexpectedOperatorException {
-        var operator = projectMemberRequest.operator();
+    public void updateMember(
+            @NotBlank(message = "Project ID cannot be null/blank when updating project member.") String projectId,
+            @NotNull(message = "Updating project member data cannot be null.")
+            @Valid
+            ProjectMemberRequest projectMemberRequest
+    ) throws NoEntityFoundException {
         var project = findProject(projectId);
         var memberId = projectMemberRequest.memberId();
-        if (memberId == null || memberId.isEmpty() || memberId.isBlank())
-            throw new IllegalAttributeException("Member ID cannot be null/empty/blank");
 
-        switch (operator) {
+        switch (projectMemberRequest.operator()) {
             case ADD -> project.getMembers().add(User.builder().id(memberId).build());
             case REMOVE -> project.getMembers().removeIf(user -> user.getId().equals(memberId));
-            default -> throw new UnexpectedOperatorException("Project member operator is not supported");
         }
-
         projectRepository.save(project);
     }
 
-    public void deleteProject(@NotNull String projectId) throws NoEntityFoundException {
+    public void deleteProject(
+            @NotBlank(message = "Project ID cannot be null/blank when deleting a project.") String projectId
+    ) throws NoEntityFoundException {
         var project = findProject(projectId);
         projectRepository.delete(project);
     }
 
-    private Project findProject(@NotNull String projectId) throws NoEntityFoundException {
+    private Project findProject(String projectId) throws NoEntityFoundException {
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
     }
 
-    private User findUser(@NotNull String userId) throws NoEntityFoundException {
+    private User findUser(String userId) throws NoEntityFoundException {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NoEntityFoundException("No user found with id: " + userId));
     }
 
-    private Pageable createPageable(@NotNull Integer pageNumber, @NotNull Integer pageSize)
-            throws IllegalAttributeException {
-        if (pageNumber < 0 || pageSize <= 0)
-            throw new IllegalAttributeException("Invalid page number or page size");
+    private Pageable createPageable(Integer pageNumber, Integer pageSize) {
         return PageRequest.of(pageNumber, pageSize);
     }
 
-    private ProjectResponse mapProjectToResponse(@NotNull Project project) {
+    private ProjectResponse mapProjectToResponse(Project project) {
         var memberIds = project.getMembers().parallelStream().map(User::getId).toList();
         return new ProjectResponse(
                 project.getId(),
