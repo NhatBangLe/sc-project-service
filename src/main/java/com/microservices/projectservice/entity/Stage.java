@@ -39,6 +39,6 @@ public class Stage {
     @JoinColumn(name = "fk_project_id", nullable = false, referencedColumnName = "id")
     private Project projectOwner;
 
-    @OneToMany(mappedBy = "stage")
+    @OneToMany(mappedBy = "stage", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Sample> samples;
 }

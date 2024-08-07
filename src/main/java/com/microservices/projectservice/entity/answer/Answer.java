@@ -1,5 +1,7 @@
-package com.microservices.projectservice.entity;
+package com.microservices.projectservice.entity.answer;
 
+import com.microservices.projectservice.entity.Field;
+import com.microservices.projectservice.entity.Sample;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -9,22 +11,20 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(
-        name = "answer",
-        uniqueConstraints = @UniqueConstraint(
-                name = "CK_FIELD_ID_AND_SAMPLE_ID",
-                columnNames = {"fk_field_id", "fk_sample_id"}
-        )
-)
+@Table(name = "answer")
 public class Answer {
+    @EmbeddedId
+    private AnswerPK primaryKey;
+
     @Column(nullable = false)
     private String value;
 
+    @MapsId("fieldId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_field_id", nullable = false, referencedColumnName = "id")
     private Field field;
 
-    @Id
+    @MapsId("sampleId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_sample_id", nullable = false, referencedColumnName = "id")
     private Sample sample;

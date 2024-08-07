@@ -1,5 +1,7 @@
 package com.microservices.projectservice.controller;
 
+import com.microservices.projectservice.dto.request.DynamicFieldCreateRequest;
+import com.microservices.projectservice.dto.request.DynamicFieldUpdateRequest;
 import com.microservices.projectservice.dto.request.FieldCreateRequest;
 import com.microservices.projectservice.dto.request.FieldUpdateRequest;
 import com.microservices.projectservice.dto.response.FieldResponse;
@@ -95,6 +97,69 @@ public class FieldController {
     })
     public void deleteField(@PathVariable String fieldId) {
         fieldService.deleteField(fieldId);
+    }
+
+    @PostMapping(path = "/{sampleId}/dynamic")
+    @ResponseStatus(HttpStatus.CREATED)
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Dynamic field created successfully. Response: The ID of the created field."
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Field name is null/empty/blank.",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Sample ID is not available.",
+                    content = @Content
+            )
+    })
+    public String createDynamicField(@PathVariable String sampleId,
+                                     @RequestBody DynamicFieldCreateRequest dynamicFieldCreateRequest) {
+        return fieldService.createDynamicField(sampleId, dynamicFieldCreateRequest);
+    }
+
+    @PatchMapping(path = "/{fieldId}/dynamic")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Field updated successfully."
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Field ID or Field name is empty/blank.",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Field ID is not available.",
+                    content = @Content
+            )
+    })
+    public void updateDynamicField(@PathVariable String fieldId,
+                                   @RequestBody DynamicFieldUpdateRequest dynamicFieldUpdateRequest) {
+        fieldService.updateDynamicField(fieldId, dynamicFieldUpdateRequest);
+    }
+
+    @DeleteMapping(path = "/{fieldId}/dynamic")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Dynamic Field deleted successfully."
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Field ID is not available.",
+                    content = @Content
+            )
+    })
+    public void deleteDynamicField(@PathVariable String fieldId) {
+        fieldService.deleteDynamicField(fieldId);
     }
 
 }

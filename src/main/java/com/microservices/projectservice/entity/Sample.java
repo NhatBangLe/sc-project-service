@@ -1,5 +1,6 @@
 package com.microservices.projectservice.entity;
 
+import com.microservices.projectservice.entity.answer.Answer;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
