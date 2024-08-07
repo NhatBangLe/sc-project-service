@@ -32,7 +32,7 @@ public class Stage {
     private LocalDate endDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_form_id", nullable = false, referencedColumnName = "id")
+    @JoinColumn(name = "fk_form_id", referencedColumnName = "id")
     private Form form;
 
     @ManyToOne(fetch = FetchType.LAZY)
