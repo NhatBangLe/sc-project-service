@@ -13,6 +13,7 @@ import static io.restassured.RestAssured.given;
 class FieldControllerTests extends ProjectServiceApplicationTests {
 
     private String formId;
+    private String sampleId;
 
     @BeforeEach
     void initProjectAndForm() {
@@ -43,6 +44,31 @@ class FieldControllerTests extends ProjectServiceApplicationTests {
                 .post("/form")
                 .thenReturn()
                 .print();
+        String stageRequestBody = """
+                {
+                    "name": "Stage 1",
+                    "description": "Some description",
+                    "startDate": "2024-07-23",
+                    "endDate": "2024-07-24",
+                    "formId": "%s",
+                    "projectOwnerId": "%s"
+                }""".formatted(formId, projectId);
+        var stageId = given(requestSpecification)
+                .body(stageRequestBody)
+                .post("/stage")
+                .thenReturn()
+                .print();
+        String sampleRequestBody = """
+                {
+                    "stageId": "%s",
+                    "projectOwnerId": "%s"
+                }""".formatted(stageId, projectId);
+        this.sampleId = given(requestSpecification)
+                .body(sampleRequestBody)
+                .when()
+                .post("/sample")
+                .thenReturn()
+                .print();
     }
 
     @Test
@@ -56,7 +82,7 @@ class FieldControllerTests extends ProjectServiceApplicationTests {
     }
 
     @Test
-    void getField_shouldReturnOk() {
+    void getFieldWithAvailableFieldId_shouldReturnOk() {
         String requestBody = """
                 {
                     "fieldName": "Test field",
@@ -196,7 +222,7 @@ class FieldControllerTests extends ProjectServiceApplicationTests {
     }
 
     @Test
-    void createField_shouldReturnCreated() {
+    void createFieldWithValidData_shouldReturnCreated() {
         String requestBody = """
                 {
                     "fieldName": "Field 1",
@@ -231,9 +257,9 @@ class FieldControllerTests extends ProjectServiceApplicationTests {
                             "fieldName": "         "
                         }""")
                 .when()
-                .post("/field/{fieldId}")
-                .thenReturn()
-                .print();
+                .patch("/field/{fieldId}")
+                .then()
+                .statusCode(400);
     }
 
     @Test
@@ -256,9 +282,9 @@ class FieldControllerTests extends ProjectServiceApplicationTests {
                             "fieldName": ""
                         }""")
                 .when()
-                .post("/field/{fieldId}")
-                .thenReturn()
-                .print();
+                .patch("/field/{fieldId}")
+                .then()
+                .statusCode(400);
     }
 
     @Test
@@ -281,9 +307,9 @@ class FieldControllerTests extends ProjectServiceApplicationTests {
                             "fieldName": "Field Updated"
                         }""")
                 .when()
-                .post("/field/{fieldId}")
-                .thenReturn()
-                .print();
+                .patch("/field/{fieldId}")
+                .then()
+                .statusCode(204);
     }
 
     @Test
@@ -306,9 +332,9 @@ class FieldControllerTests extends ProjectServiceApplicationTests {
                             "numberOrder": 1
                         }""")
                 .when()
-                .post("/field/{fieldId}")
-                .thenReturn()
-                .print();
+                .patch("/field/{fieldId}")
+                .then()
+                .statusCode(204);
     }
 
     @Test
@@ -339,6 +365,325 @@ class FieldControllerTests extends ProjectServiceApplicationTests {
                 .pathParam("fieldId", fieldId)
                 .when()
                 .delete("/field/{fieldId}")
+                .then()
+                .statusCode(204);
+    }
+
+    @Test
+    void createDynamicFieldWithNullFieldName_shouldReturnBadRequest() {
+        String requestBody = """
+                {
+                    "name": null,
+                    "value": ""
+                }""";
+        given(requestSpecification)
+                .pathParam("sampleId", sampleId)
+                .body(requestBody)
+                .when()
+                .post("/field/{sampleId}/dynamic")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void createDynamicFieldWithEmptyFieldName_shouldReturnBadRequest() {
+        String requestBody = """
+                {
+                    "name": "",
+                    "value": ""
+                }""";
+        given(requestSpecification)
+                .pathParam("sampleId", sampleId)
+                .body(requestBody)
+                .when()
+                .post("/field/{sampleId}/dynamic")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void createDynamicFieldWithBlankFieldName_shouldReturnBadRequest() {
+        String requestBody = """
+                {
+                    "name": "          ",
+                    "value": ""
+                }""";
+        given(requestSpecification)
+                .pathParam("sampleId", sampleId)
+                .body(requestBody)
+                .when()
+                .post("/field/{sampleId}/dynamic")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void createDynamicFieldWithUnavailableSampleId_shouldReturnNotFound() {
+        String requestBody = """
+                {
+                    "name": "Dynamic field 1",
+                    "value": ""
+                }""";
+        given(requestSpecification)
+                .pathParam("sampleId", "not-found")
+                .body(requestBody)
+                .when()
+                .post("/field/{sampleId}/dynamic")
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    void createDynamicFieldWithNullNumberOrder_shouldReturnCreated() {
+        String requestBody = """
+                {
+                    "name": "Dynamic field 1",
+                    "value": ""
+                }""";
+        given(requestSpecification)
+                .pathParam("sampleId", sampleId)
+                .body(requestBody)
+                .when()
+                .post("/field/{sampleId}/dynamic")
+                .then()
+                .statusCode(201);
+    }
+
+    @Test
+    void createDynamicFieldWithValidData_shouldReturnCreated() {
+        String requestBody = """
+                {
+                    "name": "Dynamic field 1",
+                    "value": "Field value",
+                    "numberOrder": 1
+                }""";
+        given(requestSpecification)
+                .pathParam("sampleId", sampleId)
+                .body(requestBody)
+                .when()
+                .post("/field/{sampleId}/dynamic")
+                .then()
+                .statusCode(201);
+    }
+
+    @Test
+    void updateDynamicFieldWithBlankFieldName_shouldReturnBadRequest() {
+        String requestBody = """
+                {
+                    "name": "Dynamic field 1",
+                    "value": "Field value",
+                    "numberOrder": 1
+                }""";
+        var fieldId = given(requestSpecification)
+                .pathParam("sampleId", sampleId)
+                .body(requestBody)
+                .when()
+                .post("/field/{sampleId}/dynamic")
+                .thenReturn()
+                .print();
+        given(requestSpecification)
+                .pathParam("fieldId", fieldId)
+                .body("""
+                        {
+                            "name": "         "
+                        }""")
+                .when()
+                .patch("/field/{fieldId}/dynamic")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void updateDynamicFieldWithEmptyFieldName_shouldReturnBadRequest() {
+        String requestBody = """
+                {
+                    "name": "Dynamic field 1",
+                    "value": "Field value",
+                    "numberOrder": 1
+                }""";
+        var fieldId = given(requestSpecification)
+                .pathParam("sampleId", sampleId)
+                .body(requestBody)
+                .when()
+                .post("/field/{sampleId}/dynamic")
+                .thenReturn()
+                .print();
+        given(requestSpecification)
+                .pathParam("fieldId", fieldId)
+                .body("""
+                        {
+                            "name": ""
+                        }""")
+                .when()
+                .patch("/field/{fieldId}/dynamic")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void updateDynamicFieldWithNewFieldName_shouldReturnNoContent() {
+        String requestBody = """
+                {
+                    "name": "Dynamic field 1",
+                    "value": "Field value",
+                    "numberOrder": 1
+                }""";
+        var fieldId = given(requestSpecification)
+                .pathParam("sampleId", sampleId)
+                .body(requestBody)
+                .when()
+                .post("/field/{sampleId}/dynamic")
+                .thenReturn()
+                .print();
+        given(requestSpecification)
+                .pathParam("fieldId", fieldId)
+                .body("""
+                        {
+                            "name": "Dynamic field updated"
+                        }""")
+                .when()
+                .patch("/field/{fieldId}/dynamic")
+                .then()
+                .statusCode(204);
+    }
+
+    @Test
+    void updateDynamicFieldWithBlankFieldValue_shouldReturnNoContent() {
+        String requestBody = """
+                {
+                    "name": "Dynamic field 1",
+                    "value": "Field value",
+                    "numberOrder": 1
+                }""";
+        var fieldId = given(requestSpecification)
+                .pathParam("sampleId", sampleId)
+                .body(requestBody)
+                .when()
+                .post("/field/{sampleId}/dynamic")
+                .thenReturn()
+                .print();
+        given(requestSpecification)
+                .pathParam("fieldId", fieldId)
+                .body("""
+                        {
+                            "value": "         "
+                        }""")
+                .when()
+                .patch("/field/{fieldId}/dynamic")
+                .then()
+                .statusCode(204);
+    }
+
+    @Test
+    void updateDynamicFieldWithEmptyFieldValue_shouldReturnNoContent() {
+        String requestBody = """
+                {
+                    "name": "Dynamic field 1",
+                    "value": "Field value",
+                    "numberOrder": 1
+                }""";
+        var fieldId = given(requestSpecification)
+                .pathParam("sampleId", sampleId)
+                .body(requestBody)
+                .when()
+                .post("/field/{sampleId}/dynamic")
+                .thenReturn()
+                .print();
+        given(requestSpecification)
+                .pathParam("fieldId", fieldId)
+                .body("""
+                        {
+                            "value": ""
+                        }""")
+                .when()
+                .patch("/field/{fieldId}/dynamic")
+                .then()
+                .statusCode(204);
+    }
+
+    @Test
+    void updateDynamicFieldWithNewFieldValue_shouldReturnNoContent() {
+        String requestBody = """
+                {
+                    "name": "Dynamic field 1",
+                    "value": "Field value",
+                    "numberOrder": 1
+                }""";
+        var fieldId = given(requestSpecification)
+                .pathParam("sampleId", sampleId)
+                .body(requestBody)
+                .when()
+                .post("/field/{sampleId}/dynamic")
+                .thenReturn()
+                .print();
+        given(requestSpecification)
+                .pathParam("fieldId", fieldId)
+                .body("""
+                        {
+                            "value": "Dynamic field value updated"
+                        }""")
+                .when()
+                .patch("/field/{fieldId}/dynamic")
+                .then()
+                .statusCode(204);
+    }
+
+    @Test
+    void updateDynamicFieldWithNewNumberOrder_shouldReturnNoContent() {
+        String requestBody = """
+                {
+                    "name": "Dynamic field 1",
+                    "value": "Field value",
+                    "numberOrder": 1
+                }""";
+        var fieldId = given(requestSpecification)
+                .pathParam("sampleId", sampleId)
+                .body(requestBody)
+                .when()
+                .post("/field/{sampleId}/dynamic")
+                .thenReturn()
+                .print();
+        given(requestSpecification)
+                .pathParam("fieldId", fieldId)
+                .body("""
+                        {
+                            "numberOrder": 2
+                        }""")
+                .when()
+                .patch("/field/{fieldId}/dynamic")
+                .then()
+                .statusCode(204);
+    }
+
+    @Test
+    void deleteDynamicFieldWithUnavailableFieldId_shouldReturnNotFound() {
+        given(requestSpecification)
+                .pathParam("fieldId", "not-found")
+                .when()
+                .delete("/field/{fieldId}/dynamic")
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    void deleteDynamicField_shouldReturnNoContent() {
+        String requestBody = """
+                {
+                    "name": "Dynamic field 1",
+                    "value": "Field value",
+                    "numberOrder": 1
+                }""";
+        var fieldId = given(requestSpecification)
+                .pathParam("sampleId", sampleId)
+                .body(requestBody)
+                .when()
+                .post("/field/{sampleId}/dynamic")
+                .thenReturn()
+                .print();
+        given(requestSpecification)
+                .pathParam("fieldId", fieldId)
+                .when()
+                .delete("/field/{fieldId}/dynamic")
                 .then()
                 .statusCode(204);
     }
