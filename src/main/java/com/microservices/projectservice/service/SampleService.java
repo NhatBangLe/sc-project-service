@@ -19,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -49,7 +50,7 @@ public class SampleService {
 
         return sampleRepository
                 .findAllByProjectOwnerOrderByCreatedTimestampAsc(project, pageable)
-                .parallelStream()
+                .stream()
                 .map(this::mapSampleToResponse)
                 .toList();
     }
@@ -68,7 +69,7 @@ public class SampleService {
 
         return sampleRepository
                 .findAllByStageOrderByCreatedTimestampAsc(stage, pageable)
-                .parallelStream()
+                .stream()
                 .map(this::mapSampleToResponse)
                 .toList();
     }
@@ -88,26 +89,6 @@ public class SampleService {
         var project = findProject(sampleCreateRequest.projectOwnerId());
         var stage = findStage(sampleCreateRequest.stageId());
 
-        // mapping AnswerCreateRequest to Answer
-        var answers = sampleCreateRequest.answers().stream()
-                .map(answerCreateRequest -> {
-                            var field = findField(answerCreateRequest.fieldId());
-                            return Answer.builder()
-                                    .value(answerCreateRequest.value())
-                                    .field(field)
-                                    .build();
-                        }
-                ).collect(Collectors.toSet());
-
-        // mapping DynamicFieldCreateRequest to DynamicField
-        var dynamicFields = sampleCreateRequest.dynamicFields().stream()
-                .map(dynamicFieldCreateRequest -> DynamicField.builder()
-                        .name(dynamicFieldCreateRequest.name())
-                        .value(dynamicFieldCreateRequest.value())
-                        .numberOrder(dynamicFieldCreateRequest.numberOrder())
-                        .build()
-                ).collect(Collectors.toSet());
-
         // creating a sample
         var sample = sampleRepository.save(
                 Sample.builder()
@@ -117,13 +98,35 @@ public class SampleService {
                         .build()
         );
 
-        // set sample for each answer and save them to database
-        answers.forEach(answer -> answer.setSample(sample));
-        answerRepository.saveAll(answers);
+        var answerUpsertRequests = sampleCreateRequest.answers();
+        if (answerUpsertRequests != null) {
+            var answers = answerUpsertRequests.stream()
+                    .map(answerCreateRequest -> {
+                                var field = findField(answerCreateRequest.fieldId());
+                                var primaryKey = new AnswerPK(field.getId(), sample.getId());
+                                return Answer.builder()
+                                        .primaryKey(primaryKey)
+                                        .value(answerCreateRequest.value())
+                                        .field(field)
+                                        .sample(sample)
+                                        .build();
+                            }
+                    ).collect(Collectors.toSet());
+            answerRepository.saveAll(answers);
+        }
 
-        // set dynamic fields for each field and save them to database
-        dynamicFields.forEach(dynamicField -> dynamicField.setSample(sample));
-        dynamicFieldRepository.saveAll(dynamicFields);
+        var dynamicFieldCreateRequests = sampleCreateRequest.dynamicFields();
+        if (dynamicFieldCreateRequests != null) {
+            var dynamicFields = dynamicFieldCreateRequests.stream()
+                    .map(dynamicFieldCreateRequest -> DynamicField.builder()
+                            .name(dynamicFieldCreateRequest.name())
+                            .value(dynamicFieldCreateRequest.value())
+                            .numberOrder(dynamicFieldCreateRequest.numberOrder())
+                            .sample(sample)
+                            .build()
+                    ).collect(Collectors.toSet());
+            dynamicFieldRepository.saveAll(dynamicFields);
+        }
 
         return sample.getId();
     }
@@ -184,30 +187,36 @@ public class SampleService {
     }
 
     private SampleResponse mapSampleToResponse(Sample sample) {
-        var answers = sample.getAnswers().stream()
-                .map(answer -> {
-                    var field = answer.getField();
-                    var fieldResponse = new FieldResponse(
-                            field.getId(),
-                            field.getNumberOrder(),
-                            field.getName(),
-                            field.getForm().getId()
-                    );
-                    return new SampleResponse.AnswerResponse(
-                            answer.getValue(),
-                            fieldResponse
-                    );
-                })
-                .toList();
-        var dynamicFields = sample.getDynamicFields().stream()
-                .map(dField -> new SampleResponse.DynamicFieldResponse(
-                        dField.getId(),
-                        dField.getName(),
-                        dField.getValue(),
-                        dField.getNumberOrder()
-                ))
-                .sorted(Comparator.comparingInt(SampleResponse.DynamicFieldResponse::numberOrder))
-                .toList();
+        var answers = sample.getAnswers();
+        List<SampleResponse.AnswerResponse> answerResponses = Collections.emptyList();
+        if (answers != null)
+            answerResponses = answers.stream()
+                    .map(answer -> {
+                        var field = answer.getField();
+                        var fieldResponse = new FieldResponse(
+                                field.getId(),
+                                field.getNumberOrder(),
+                                field.getName(),
+                                field.getForm().getId()
+                        );
+                        return new SampleResponse.AnswerResponse(
+                                answer.getValue(),
+                                fieldResponse
+                        );
+                    })
+                    .toList();
+        var dynamicFields = sample.getDynamicFields();
+        List<SampleResponse.DynamicFieldResponse> dynamicFieldResponses = Collections.emptyList();
+        if (dynamicFields != null)
+            dynamicFieldResponses = dynamicFields.stream()
+                    .map(dField -> new SampleResponse.DynamicFieldResponse(
+                            dField.getId(),
+                            dField.getName(),
+                            dField.getValue(),
+                            dField.getNumberOrder()
+                    ))
+                    .sorted(Comparator.comparingInt(SampleResponse.DynamicFieldResponse::numberOrder))
+                    .toList();
 
         return new SampleResponse(
                 sample.getId(),
@@ -215,8 +224,8 @@ public class SampleService {
                 sample.getCreatedTimestamp(),
                 sample.getProjectOwner().getId(),
                 sample.getStage().getId(),
-                answers,
-                dynamicFields
+                answerResponses,
+                dynamicFieldResponses
         );
     }
 

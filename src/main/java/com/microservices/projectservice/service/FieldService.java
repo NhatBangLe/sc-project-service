@@ -107,10 +107,13 @@ public class FieldService {
     ) throws NoEntityFoundException {
         var sample = findSample(sampleId);
 
+        var numberOrder = dynamicFieldCreateRequest.numberOrder();
+        if (numberOrder == null) numberOrder = 0;
+
         var dynamicField = DynamicField.builder()
                 .name(dynamicFieldCreateRequest.name())
                 .value(dynamicFieldCreateRequest.value())
-                .numberOrder(dynamicFieldCreateRequest.numberOrder())
+                .numberOrder(numberOrder)
                 .sample(sample)
                 .build();
         return dynamicFieldRepository.save(dynamicField).getId();
