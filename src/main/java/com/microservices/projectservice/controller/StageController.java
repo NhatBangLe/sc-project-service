@@ -35,8 +35,8 @@ public class StageController {
             @ApiResponse(responseCode = "404", description = "Project ID is not available.", content = @Content)
     })
     public List<StageResponse> getAllStages(@PathVariable String projectId,
-                                                @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
-                                                @RequestParam(required = false, defaultValue = "6") Integer pageSize) {
+                                            @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
+                                            @RequestParam(required = false, defaultValue = "6") Integer pageSize) {
         return stageService.getAllStages(projectId, pageNumber, pageSize);
     }
 
@@ -56,7 +56,7 @@ public class StageController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Stage name, Form ID or Project owner ID is null/empty/blank. " +
+                    description = "Stage name, Form ID or Project owner ID is null/blank. " +
                                   "Otherwise, stage start date is greater than end date.",
                     content = @Content
             ),

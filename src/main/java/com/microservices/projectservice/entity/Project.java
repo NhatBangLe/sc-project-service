@@ -14,10 +14,10 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "project")
+@Table(name = "PROJECT")
 public class Project {
     @Id
-    @Column(nullable = false, length = 36)
+    @Column(length = 36)
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
@@ -27,7 +27,7 @@ public class Project {
     @Column
     private String description;
 
-    @Column(columnDefinition = "smallint default 0")
+    @Column(nullable = false, columnDefinition = "smallint default 0")
     private ProjectStatus status;
 
     @Column
@@ -55,4 +55,6 @@ public class Project {
     @OneToMany(mappedBy = "projectOwner", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private Set<Stage> stages = new HashSet<>();
 
+    @OneToMany(mappedBy = "projectOwner", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private Set<Sample> samples = new HashSet<>();
 }

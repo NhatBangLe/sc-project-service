@@ -52,11 +52,11 @@ public class FormController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "201",
-                    description = "Form created successfully. Response: The ID of the created stage."
+                    description = "Form created successfully. Response: The ID of the created form."
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Project owner ID or Form title is null/empty/blank.",
+                    description = "Project owner ID or Form title is null/blank.",
                     content = @Content
             ),
             @ApiResponse(
@@ -72,11 +72,8 @@ public class FormController {
     @PatchMapping(path = "/{formId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Stage updated successfully."),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Form title is empty/blank."
-            ),
+            @ApiResponse(responseCode = "204", description = "Form updated successfully."),
+            @ApiResponse(responseCode = "400", description = "Form title is blank."),
             @ApiResponse(responseCode = "404", description = "Form ID is not available.")
     })
     public void updateForm(@PathVariable String formId, @RequestBody FormUpdateRequest formUpdateRequest) {
@@ -86,14 +83,8 @@ public class FormController {
     @DeleteMapping(path = "/{formId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "Form deleted successfully."
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Form ID is not available."
-            )
+            @ApiResponse(responseCode = "204", description = "Form deleted successfully."),
+            @ApiResponse(responseCode = "404", description = "Form ID is not available.")
     })
     public void deleteForm(@PathVariable String formId) {
         formService.deleteForm(formId);

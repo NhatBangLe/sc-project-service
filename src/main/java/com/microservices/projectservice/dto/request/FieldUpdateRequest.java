@@ -2,8 +2,8 @@ package com.microservices.projectservice.dto.request;
 
 import java.io.Serializable;
 
-public record FormUpdateRequest(
-        String title,
-        String description
+public record FieldUpdateRequest(
+        String fieldName,
+        Integer numberOrder
 ) implements Serializable {
 }

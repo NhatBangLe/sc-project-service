@@ -12,10 +12,10 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "form")
+@Table(name = "FORM")
 public class Form {
     @Id
-    @Column(nullable = false, length = 36)
+    @Column(length = 36)
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
@@ -32,4 +32,6 @@ public class Form {
     @JoinColumn(name = "fk_project_id", nullable = false, referencedColumnName = "id")
     private Project projectOwner;
 
+    @OneToMany(mappedBy = "form", cascade = CascadeType.ALL)
+    private Set<Field> fields = new HashSet<>();
 }

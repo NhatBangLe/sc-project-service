@@ -12,23 +12,16 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "user")
+@Table(name = "USER")
 public class User {
     @Id
-    @Column(nullable = false, length = 36)
+    @Column(length = 36)
     private String id;
 
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "owner")
     private Set<Project> ownProjects = new HashSet<>();
 
-    @ManyToMany(fetch = FetchType.LAZY,
-            cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.REFRESH})
-    @JoinTable(
-            name = "project_member",
-            joinColumns = @JoinColumn(name = "member_id", referencedColumnName = "id", nullable = false),
-            inverseJoinColumns = @JoinColumn(name = "project_id", referencedColumnName = "id", nullable = false)
-    )
+    @ManyToMany(mappedBy = "members", fetch = FetchType.LAZY)
     private Set<Project> joinProjects = new HashSet<>();
-
 
 }

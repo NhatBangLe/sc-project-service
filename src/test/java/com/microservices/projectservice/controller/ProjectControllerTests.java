@@ -1,11 +1,17 @@
 package com.microservices.projectservice.controller;
 
 import com.microservices.projectservice.ProjectServiceApplicationTests;
+import io.restassured.specification.RequestSpecification;
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.restassured.RestAssured.given;
 
 class ProjectControllerTests extends ProjectServiceApplicationTests {
+
+    private final String ownerId = "ff394849-1f55-4b8b-bf56-956c43cfff56";
 
     @Test
     void getProject_shouldReturnNotFound() {
@@ -25,8 +31,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "description": 2,
                     "startDate": "2024-07-23",
                     "endDate": "2024-07-24",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         var projectId = given(requestSpecification)
                 .body(requestBody)
                 .post("/project")
@@ -42,6 +48,100 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
     }
 
     @Test
+    void getAllJoinProjectsWithUnavailableUserId_shouldReturnNotFound() {
+        given(requestSpecification)
+                .pathParam("userId", "not-found")
+                .queryParam("isOwner", false)
+                .when()
+                .get("/project/{userId}/user")
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    void getAllJoinProjectsWithUserId_shouldReturnOk() {
+        List<RequestSpecification> requests = new ArrayList<>();
+        for (int i = 1; i <= 3; i++) {
+            requests.add(given(requestSpecification)
+                    .body("""
+                            {
+                                "name": "Project %d",
+                                "description": "Testing project %d",
+                                "startDate": "2024-07-23",
+                                "endDate": "2024-07-24",
+                                "ownerId": "%s"
+                            }""".formatted(i, i, ownerId))
+            );
+        }
+        var projectIds = requests.stream().map(request -> request
+                .when()
+                .post("/project")
+                .thenReturn()
+                .print()
+        ).toList();
+
+        var memberId = "mb394849-1f55-4b8b-bf56-956c43cfff56";
+        projectIds.forEach(projectId -> given(requestSpecification)
+                .pathParam("projectId", projectId)
+                .body("""
+                        {
+                            "memberId": "%s",
+                            "operator": "ADD"
+                        }""".formatted(memberId))
+                .when()
+                .patch("/project/{projectId}/member")
+        );
+
+        var getRequest = given(requestSpecification)
+                .pathParam("userId", memberId)
+                .queryParam("isOwner", false)
+                .when()
+                .get("/project/{userId}/user");
+        getRequest.prettyPrint();
+        getRequest.then().statusCode(200);
+    }
+
+    @Test
+    void getAllOwnProjectsWithUnavailableUserId_shouldReturnNotFound() {
+        given(requestSpecification)
+                .pathParam("userId", "not-found")
+                .when()
+                .get("/project/{userId}/user")
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    void getAllOwnProjectsWithUserId_shouldReturnOk() {
+        List<RequestSpecification> requests = new ArrayList<>();
+        for (int i = 1; i <= 3; i++) {
+            requests.add(given(requestSpecification)
+                    .body("""
+                            {
+                                "name": "Project %d",
+                                "description": "Testing project %d",
+                                "startDate": "2024-07-23",
+                                "endDate": "2024-07-24",
+                                "ownerId": "%s"
+                            }""".formatted(i, i, ownerId))
+            );
+        }
+        requests.forEach(request -> request
+                .when()
+                .post("/project")
+                .thenReturn()
+                .print()
+        );
+
+        var getRequest = given(requestSpecification)
+                .pathParam("userId", ownerId)
+                .when()
+                .get("/project/{userId}/user");
+        getRequest.prettyPrint();
+        getRequest.then().statusCode(200);
+    }
+
+    @Test
     void createProjectWithBlankOwnerId_shouldReturnBadRequest() {
         String requestBody = """
                 {
@@ -49,7 +149,7 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "description": 2,
                     "startDate": "2024-07-23",
                     "endDate": "2024-07-24",
-                    "ownerId": ""
+                    "ownerId": "          "
                 }""";
         given(requestSpecification)
                 .body(requestBody)
@@ -67,8 +167,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "description": 2,
                     "startDate": "2024-07-23",
                     "endDate": "2024-07-24",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
 
         given(requestSpecification)
                 .body(requestBody)
@@ -102,8 +202,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "description": 2,
                     "startDate": "2024-07-23",
                     "endDate": "2024-07-24",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -120,8 +220,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "description": "Some description",
                     "startDate": "2024-07-24",
                     "endDate": "2024-07-23",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -131,37 +231,37 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
     }
 
     @Test
-    void createProjectWithNullStartDate_shouldReturnBadRequest() {
+    void createProjectWithNullStartDate_shouldReturnCreated() {
         String requestBody = """
                 {
                     "name": "Test project",
                     "description": "Some description",
                     "endDate": "2024-07-24",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         given(requestSpecification)
                 .body(requestBody)
                 .when()
                 .post("/project")
                 .then()
-                .statusCode(400);
+                .statusCode(201);
     }
 
     @Test
-    void createProjectWithNullEndDate_shouldReturnBadRequest() {
+    void createProjectWithNullEndDate_shouldReturnCreated() {
         String requestBody = """
                 {
                     "name": "Test project",
                     "description": "Some description",
                     "startDate": "2024-07-24",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         given(requestSpecification)
                 .body(requestBody)
                 .when()
                 .post("/project")
                 .then()
-                .statusCode(400);
+                .statusCode(201);
     }
 
     @Test
@@ -172,8 +272,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "description": "",
                     "startDate": "2024-07-23",
                     "endDate": "2024-07-24",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -190,8 +290,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "description": "Some description",
                     "startDate": "2024-07-23",
                     "endDate": "2024-07-24",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -222,8 +322,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "name": "Test project",
                     "startDate": "2024-07-23",
                     "endDate": "2024-07-24",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         var projectId = given(requestSpecification)
                 .body(createRequestBody)
                 .post("/project")
@@ -251,8 +351,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "name": "Test project",
                     "startDate": "2024-07-23",
                     "endDate": "2024-07-24",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         var projectId = given(requestSpecification)
                 .body(createRequestBody)
                 .post("/project")
@@ -280,8 +380,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "name": "Test project",
                     "startDate": "2024-07-23",
                     "endDate": "2024-07-24",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         var projectId = given(requestSpecification)
                 .body(createRequestBody)
                 .post("/project")
@@ -310,8 +410,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "name": "Test project",
                     "startDate": "2024-07-23",
                     "endDate": "2024-07-24",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         var projectId = given(requestSpecification)
                 .body(createRequestBody)
                 .post("/project")
@@ -339,8 +439,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "name": "Test project",
                     "startDate": "2024-07-26",
                     "endDate": "2024-07-28",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         var projectId = given(requestSpecification)
                 .body(createRequestBody)
                 .post("/project")
@@ -368,8 +468,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "name": "Test project",
                     "startDate": "2024-07-26",
                     "endDate": "2024-07-28",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         var projectId = given(requestSpecification)
                 .body(createRequestBody)
                 .post("/project")
@@ -397,8 +497,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "name": "Test project",
                     "startDate": "2024-07-26",
                     "endDate": "2024-07-28",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         var projectId = given(requestSpecification)
                 .body(createRequestBody)
                 .post("/project")
@@ -426,8 +526,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "name": "Test project",
                     "startDate": "2024-07-26",
                     "endDate": "2024-07-28",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         var projectId = given(requestSpecification)
                 .body(createRequestBody)
                 .post("/project")
@@ -456,8 +556,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "name": "Test project",
                     "startDate": "2024-07-26",
                     "endDate": "2024-07-28",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         var projectId = given(requestSpecification)
                 .body(createRequestBody)
                 .post("/project")
@@ -486,8 +586,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "name": "Test project",
                     "startDate": "2024-07-26",
                     "endDate": "2024-07-28",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         var projectId = given(requestSpecification)
                 .body(createRequestBody)
                 .post("/project")
@@ -516,8 +616,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "name": "Test project",
                     "startDate": "2024-07-26",
                     "endDate": "2024-07-28",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         var projectId = given(requestSpecification)
                 .body(createRequestBody)
                 .post("/project")
@@ -557,8 +657,8 @@ class ProjectControllerTests extends ProjectServiceApplicationTests {
                     "description": 2,
                     "startDate": "2024-07-23",
                     "endDate": "2024-07-24",
-                    "ownerId": "ff394849-1f55-4b8b-bf56-956c43cfff56"
-                }""";
+                    "ownerId": "%s"
+                }""".formatted(ownerId);
         var projectId = given(requestSpecification)
                 .body(requestBody)
                 .post("/project")

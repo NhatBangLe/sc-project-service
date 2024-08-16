@@ -1,12 +1,11 @@
 package com.microservices.projectservice.exception;
 
 import lombok.NoArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
-@ResponseStatus(value = HttpStatus.NOT_FOUND, reason = "Entity not found")
+import java.util.NoSuchElementException;
+
 @NoArgsConstructor
-public class NoEntityFoundException extends RuntimeException {
+public class NoEntityFoundException extends NoSuchElementException {
     public NoEntityFoundException(String message) {
         super(message);
     }

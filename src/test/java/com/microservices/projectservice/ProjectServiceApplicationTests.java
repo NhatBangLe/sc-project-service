@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Import;
 @NoArgsConstructor
 public class ProjectServiceApplicationTests {
 
-    static String API_VERSION = "v1";
+    final static String API_VERSION = "v1";
 
     @LocalServerPort
     protected int port;

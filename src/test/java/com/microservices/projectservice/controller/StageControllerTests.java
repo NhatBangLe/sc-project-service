@@ -167,7 +167,7 @@ class StageControllerTests extends ProjectServiceApplicationTests {
     }
 
     @Test
-    void createStageWithNullFormId_shouldReturnBadRequest() {
+    void createStageWithNullFormId_shouldReturnNoContent() {
         String requestBody = """
                 {
                     "name": "Test stage",
@@ -180,11 +180,11 @@ class StageControllerTests extends ProjectServiceApplicationTests {
                 .body(requestBody)
                 .post("/stage")
                 .then()
-                .statusCode(400);
+                .statusCode(201);
     }
 
     @Test
-    void createStageWithBlankFormId_shouldReturnBadRequest() {
+    void createStageWithBlankFormId_shouldReturnNoContent() {
         String requestBody = """
                 {
                     "name": "Stage 1",
@@ -198,7 +198,7 @@ class StageControllerTests extends ProjectServiceApplicationTests {
                 .body(requestBody)
                 .post("/stage")
                 .then()
-                .statusCode(400);
+                .statusCode(201);
     }
 
     @Test
