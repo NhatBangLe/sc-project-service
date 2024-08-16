@@ -14,6 +14,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
 
     private String projectId;
     private String stageId;
+    private final String attachmentId = "f1c23a7a-9205-47fc-9e22-dbbe7d30874e";
     private List<String> fieldIds; // min size 3
 
     @BeforeEach
@@ -211,6 +212,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     void getSample_shouldReturnOK() {
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "longitude",
                   "projectOwnerId": "%s",
                   "stageId": "%s",
@@ -240,7 +242,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
                       "numberOrder": 1
                     }
                   ]
-                }""".formatted(projectId, stageId, fieldIds.get(0), fieldIds.get(1), fieldIds.get(2));
+                }""".formatted(attachmentId, projectId, stageId, fieldIds.get(0), fieldIds.get(1), fieldIds.get(2));
         var sampleId = given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -256,12 +258,46 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     }
 
     @Test
-    void createSampleWithNullProjectOwnerId_shouldReturnBadRequest() {
+    void createSampleWithNullAttachmentId_shouldReturnBadRequest() {
         var requestBody = """
                 {
                   "position": "longitude",
+                  "projectOwnerId": "%s",
                   "stageId": "%s"
-                }""".formatted(stageId);
+                }""".formatted(projectId, stageId);
+        given(requestSpecification)
+                .body(requestBody)
+                .when()
+                .post("/sample")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void createSampleWithBlankAttachmentId_shouldReturnBadRequest() {
+        var requestBody = """
+                {
+                  "attachmentId": "  ",
+                  "position": "longitude",
+                  "projectOwnerId": "%s",
+                  "stageId": "%s"
+                }""".formatted(projectId, stageId);
+        given(requestSpecification)
+                .body(requestBody)
+                .when()
+                .post("/sample")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void createSampleWithNullProjectOwnerId_shouldReturnBadRequest() {
+        var requestBody = """
+                {
+                  "attachmentId": "%s",
+                  "position": "longitude",
+                  "stageId": "%s"
+                }""".formatted(attachmentId, stageId);
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -274,10 +310,11 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     void createSampleWithBlankProjectOwnerId_shouldReturnBadRequest() {
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "longitude",
                   "projectOwnerId": "%s",
                   "stageId": "%s"
-                }""".formatted("           ", stageId);
+                }""".formatted(attachmentId, "           ", stageId);
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -290,10 +327,11 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     void createSampleWithUnavailableProjectOwnerId_shouldReturnNotFound() {
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "longitude",
                   "projectOwnerId": "%s",
                   "stageId": "%s"
-                }""".formatted("not-found", stageId);
+                }""".formatted(attachmentId, "not-found", stageId);
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -306,9 +344,10 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     void createSampleWithNullStageId_shouldReturnBadRequest() {
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "longitude",
                   "projectOwnerId": "%s"
-                }""".formatted(projectId);
+                }""".formatted(attachmentId, projectId);
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -321,10 +360,11 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     void createSampleWithBlankStageId_shouldReturnBadRequest() {
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "longitude",
                   "projectOwnerId": "%s",
                   "stageId": "%s"
-                }""".formatted(projectId, "            ");
+                }""".formatted(attachmentId, projectId, "            ");
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -337,10 +377,11 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     void createSampleWithUnavailableStageId_shouldReturnNotFound() {
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "longitude",
                   "projectOwnerId": "%s",
                   "stageId": "%s"
-                }""".formatted(projectId, "not-found");
+                }""".formatted(attachmentId, projectId, "not-found");
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -353,6 +394,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     void createSampleWithNullAnswers_shouldReturnCreated() {
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "longitude",
                   "projectOwnerId": "%s",
                   "stageId": "%s",
@@ -368,7 +410,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
                       "numberOrder": 1
                     }
                   ]
-                }""".formatted(projectId, stageId);
+                }""".formatted(attachmentId, projectId, stageId);
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -381,6 +423,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     void createSampleWithNullDynamicFields_shouldReturnCreated() {
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "longitude",
                   "projectOwnerId": "%s",
                   "stageId": "%s",
@@ -398,7 +441,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
                       "fieldId": "%s"
                     }
                   ]
-                }""".formatted(projectId, stageId, fieldIds.get(0), fieldIds.get(1), fieldIds.get(2));
+                }""".formatted(attachmentId, projectId, stageId, fieldIds.get(0), fieldIds.get(1), fieldIds.get(2));
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -411,6 +454,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     void createSampleWithNullPosition_shouldReturnCreated() {
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "projectOwnerId": "%s",
                   "stageId": "%s",
                   "answers": [
@@ -439,7 +483,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
                       "numberOrder": 1
                     }
                   ]
-                }""".formatted(projectId, stageId, fieldIds.get(0), fieldIds.get(1), fieldIds.get(2));
+                }""".formatted(attachmentId, projectId, stageId, fieldIds.get(0), fieldIds.get(1), fieldIds.get(2));
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -452,6 +496,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     void createSampleWithBlankPosition_shouldReturnCreated() {
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "         ",
                   "projectOwnerId": "%s",
                   "stageId": "%s",
@@ -481,7 +526,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
                       "numberOrder": 1
                     }
                   ]
-                }""".formatted(projectId, stageId, fieldIds.get(0), fieldIds.get(1), fieldIds.get(2));
+                }""".formatted(attachmentId, projectId, stageId, fieldIds.get(0), fieldIds.get(1), fieldIds.get(2));
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -494,6 +539,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     void createSample_shouldReturnCreated() {
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "longitude",
                   "projectOwnerId": "%s",
                   "stageId": "%s",
@@ -523,7 +569,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
                       "numberOrder": 1
                     }
                   ]
-                }""".formatted(projectId, stageId, fieldIds.get(0), fieldIds.get(1), fieldIds.get(2));
+                }""".formatted(attachmentId, projectId, stageId, fieldIds.get(0), fieldIds.get(1), fieldIds.get(2));
         given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -550,10 +596,11 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     void updateSampleWithAvailableSampleId_shouldReturnNoContent() {
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "longitude",
                   "projectOwnerId": "%s",
                   "stageId": "%s"
-                }""".formatted(projectId, stageId);
+                }""".formatted(attachmentId, projectId, stageId);
         var sampleId = given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -576,10 +623,11 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     void updateSampleWithBlankPosition_shouldReturnNoContent() {
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "longitude",
                   "projectOwnerId": "%s",
                   "stageId": "%s"
-                }""".formatted(projectId, stageId);
+                }""".formatted(attachmentId, projectId, stageId);
         var sampleId = given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -596,6 +644,33 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
                 .patch("/sample/{sampleId}")
                 .then()
                 .statusCode(204);
+    }
+
+    @Test
+    void updateSampleWithBlankAttachmentId_shouldReturnBadRequest() {
+        var requestBody = """
+                {
+                  "attachmentId": "%s",
+                  "position": "longitude",
+                  "projectOwnerId": "%s",
+                  "stageId": "%s"
+                }""".formatted(attachmentId, projectId, stageId);
+        var sampleId = given(requestSpecification)
+                .body(requestBody)
+                .when()
+                .post("/sample")
+                .thenReturn()
+                .print();
+        given(requestSpecification)
+                .pathParam("sampleId", sampleId)
+                .body("""
+                        {
+                          "attachmentId": "          "
+                        }""")
+                .when()
+                .patch("/sample/{sampleId}")
+                .then()
+                .statusCode(400);
     }
 
     @Test
@@ -635,6 +710,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
         var fieldId = fieldIds.getFirst();
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "longitude",
                   "projectOwnerId": "%s",
                   "stageId": "%s",
@@ -644,7 +720,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
                       "fieldId": "%s"
                     }
                   ]
-                }""".formatted(projectId, stageId, fieldId);
+                }""".formatted(attachmentId, projectId, stageId, fieldId);
         var sampleId = given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -736,6 +812,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
         var fieldId = fieldIds.getFirst();
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "longitude",
                   "projectOwnerId": "%s",
                   "stageId": "%s",
@@ -745,7 +822,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
                       "fieldId": "%s"
                     }
                   ]
-                }""".formatted(projectId, stageId, fieldId);
+                }""".formatted(attachmentId, projectId, stageId, fieldId);
         var sampleId = given(requestSpecification)
                 .body(requestBody)
                 .when()
@@ -779,6 +856,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
     void deleteSampleWithAvailableSampleId_shouldReturnNoContent() {
         var requestBody = """
                 {
+                  "attachmentId": "%s",
                   "position": "longitude",
                   "projectOwnerId": "%s",
                   "stageId": "%s",
@@ -808,7 +886,7 @@ class SampleControllerTests extends ProjectServiceApplicationTests {
                       "numberOrder": 1
                     }
                   ]
-                }""".formatted(projectId, stageId, fieldIds.get(0), fieldIds.get(1), fieldIds.get(2));
+                }""".formatted(attachmentId, projectId, stageId, fieldIds.get(0), fieldIds.get(1), fieldIds.get(2));
         var sampleId = given(requestSpecification)
                 .body(requestBody)
                 .when()

@@ -25,6 +25,9 @@ public class Sample {
     @Column
     private String position;
 
+    @Column(nullable = false)
+    private String attachmentId;
+
     @CreationTimestamp
     private Timestamp createdTimestamp;
 

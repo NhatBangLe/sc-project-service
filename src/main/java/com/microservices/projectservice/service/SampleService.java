@@ -8,6 +8,7 @@ import com.microservices.projectservice.dto.response.SampleResponse;
 import com.microservices.projectservice.entity.*;
 import com.microservices.projectservice.entity.answer.Answer;
 import com.microservices.projectservice.entity.answer.AnswerPK;
+import com.microservices.projectservice.exception.IllegalAttributeException;
 import com.microservices.projectservice.exception.NoEntityFoundException;
 import com.microservices.projectservice.repository.*;
 import jakarta.validation.Valid;
@@ -92,6 +93,7 @@ public class SampleService {
         // creating a sample
         var sample = sampleRepository.save(
                 Sample.builder()
+                        .attachmentId(sampleCreateRequest.attachmentId())
                         .position(sampleCreateRequest.position())
                         .projectOwner(project)
                         .stage(stage)
@@ -136,11 +138,23 @@ public class SampleService {
             @NotNull(message = "The updating sample data cannot be null.") SampleUpdateRequest sampleUpdateRequest
     ) throws NoEntityFoundException {
         var sample = findSample(sampleId);
+        var isUpdated = false;
+
+        var attachmentId = sampleUpdateRequest.attachmentId();
+        if (attachmentId != null) {
+            if (attachmentId.isBlank())
+                throw new IllegalAttributeException("Attachment ID cannot be blank when updating a field.");
+            sample.setAttachmentId(attachmentId);
+            isUpdated = true;
+        }
+
         var position = sampleUpdateRequest.position();
         if (position != null) {
             sample.setPosition(position);
-            sampleRepository.save(sample);
+            isUpdated = true;
         }
+
+        if (isUpdated) sampleRepository.save(sample);
     }
 
     public void updateAnswer(
@@ -220,6 +234,7 @@ public class SampleService {
 
         return new SampleResponse(
                 sample.getId(),
+                sample.getAttachmentId(),
                 sample.getPosition(),
                 sample.getCreatedTimestamp(),
                 sample.getProjectOwner().getId(),
