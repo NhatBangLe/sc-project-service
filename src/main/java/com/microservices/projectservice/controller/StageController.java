@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping(path = "/api/${api.version}/stage")
+@RequestMapping(path = "/api/${API.VERSION}/stage")
 @RequiredArgsConstructor
 @Tag(name = "Stage", description = "All endpoints about stages.")
 public class StageController {

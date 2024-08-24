@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping(path = "/api/${api.version}/field")
+@RequestMapping(path = "/api/${API.VERSION}/field")
 @RequiredArgsConstructor
 @Tag(name = "Field", description = "All endpoints about fields.")
 public class FieldController {

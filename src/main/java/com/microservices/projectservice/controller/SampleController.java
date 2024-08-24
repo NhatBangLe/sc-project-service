@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping(path = "/api/${api.version}/sample")
+@RequestMapping(path = "/api/${API.VERSION}/sample")
 @RequiredArgsConstructor
 @Tag(name = "Sample", description = "All endpoints about samples.")
 public class SampleController {

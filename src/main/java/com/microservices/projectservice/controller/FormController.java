@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping(path = "/api/${api.version}/form")
+@RequestMapping(path = "/api/${API.VERSION}/form")
 @RequiredArgsConstructor
 @Tag(name = "Form", description = "All endpoints about forms.")
 public class FormController {
