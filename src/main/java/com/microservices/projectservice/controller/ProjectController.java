@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping(path = "/api/${api.version}/project")
+@RequestMapping(path = "/api/${API.VERSION}/project")
 @RequiredArgsConstructor
 @Tag(name = "Project", description = "All endpoints about projects.")
 public class ProjectController {
