@@ -8,6 +8,8 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
+    env_file:
+      - .env
     healthcheck:
       test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
       interval: 30s
@@ -15,8 +17,6 @@ services:
       retries: 3
     volumes:
       - ./mysql-db:/var/lib/mysql
-    env_file:
-      - .env
     networks:
       - project-network
   project-service:
