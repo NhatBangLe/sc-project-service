@@ -87,6 +87,7 @@ public class ProjectService {
         String userOwnerId = projectCreateRequest.ownerId();
 
         var projectBuilder = Project.builder().name(projectCreateRequest.name())
+                .thumbnailId(projectCreateRequest.thumbnailId())
                 .description(projectCreateRequest.description())
                 .startDate(startDate)
                 .endDate(endDate)
@@ -184,6 +185,7 @@ public class ProjectService {
         var memberIds = project.getMembers().parallelStream().map(User::getId).toList();
         return new ProjectResponse(
                 project.getId(),
+                project.getThumbnailId(),
                 project.getName(),
                 project.getDescription(),
                 project.getStartDate(),

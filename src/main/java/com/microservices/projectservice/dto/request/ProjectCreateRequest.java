@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record ProjectCreateRequest(
+        String thumbnailId,
         @NotBlank(message = "Project name cannot be null/blank when creating a project.")
         String name,
         String description,

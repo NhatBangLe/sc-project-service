@@ -21,6 +21,9 @@ public class Project {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @Column
+    private String thumbnailId;
+
     @Column(nullable = false)
     private String name;
 
