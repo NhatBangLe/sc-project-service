@@ -21,8 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Validated
@@ -87,6 +87,7 @@ public class ProjectService {
         String userOwnerId = projectCreateRequest.ownerId();
 
         var projectBuilder = Project.builder().name(projectCreateRequest.name())
+                .thumbnailId(projectCreateRequest.thumbnailId())
                 .description(projectCreateRequest.description())
                 .startDate(startDate)
                 .endDate(endDate)
@@ -95,11 +96,24 @@ public class ProjectService {
                 projectBuilder::owner,
                 () -> projectBuilder.owner(User.builder().id(userOwnerId).build())
         );
+
         var memberIds = projectCreateRequest.memberIds();
-        if (memberIds != null)
-            projectBuilder.members(memberIds.stream()
-                    .map(memberId -> User.builder().id(memberId).build())
-                    .collect(Collectors.toSet()));
+        if (memberIds != null) {
+            // take id not equal to ownerId only
+            var filteredMemberIds = memberIds.stream().filter(id -> !id.equals(userOwnerId)).toList();
+            var existedUsers = userRepository.findAllById(filteredMemberIds);
+
+            // check users not existed
+            if (existedUsers.size() != filteredMemberIds.size()) {
+                var existedIds = existedUsers.stream().map(User::getId).toList();
+                var newUsers = filteredMemberIds.stream()
+                        .filter(id -> !existedIds.contains(id))
+                        .map(id -> User.builder().id(id).build())
+                        .toList();
+                existedUsers.addAll(newUsers);
+            }
+            projectBuilder.members(new HashSet<>(existedUsers));
+        }
 
         return projectRepository.save(projectBuilder.build()).getId();
     }
@@ -184,6 +198,7 @@ public class ProjectService {
         var memberIds = project.getMembers().parallelStream().map(User::getId).toList();
         return new ProjectResponse(
                 project.getId(),
+                project.getThumbnailId(),
                 project.getName(),
                 project.getDescription(),
                 project.getStartDate(),

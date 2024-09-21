@@ -9,11 +9,14 @@ import java.util.List;
 /**
  * DTO for {@link Project}
  */
-public record ProjectResponse(String id,
-                              String name,
-                              String description,
-                              LocalDate startDate,
-                              LocalDate endDate,
-                              String ownerId,
-                              List<String> memberIds) implements Serializable {
+public record ProjectResponse(
+        String id,
+        String thumbnailId,
+        String name,
+        String description,
+        LocalDate startDate,
+        LocalDate endDate,
+        String ownerId,
+        List<String> memberIds
+) implements Serializable {
 }

@@ -1,5 +1,5 @@
 services:
-  project-db:
+  mysql:
     image: mysql:8.1
     container_name: project-db
     ports:
@@ -12,15 +12,14 @@ services:
       - .env
     healthcheck:
       test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
-      interval: 30s
-      timeout: 30s
+      interval: 10s
+      timeout: 10s
       retries: 3
     volumes:
-      - ./mysql-db:/var/lib/mysql
+      - db-data:/var/lib/mysql
     networks:
-      - project-network
+      - network
   project-service:
-    restart: always
     build:
       context: .
       dockerfile: Dockerfile
@@ -29,18 +28,24 @@ services:
       - "${SERVICE_PORT}:8080"
     environment:
       PROFILE_ACTIVE: dev
-      DB_HOST: project-db:3306
+      DB_HOST: mysql:3306
       ROOT_LOG_LEVEL: error
       WEB_LOG_LEVEL: debug
     env_file:
       - .env
     volumes:
-      - ./logs:/sc-project/logs
+      - logs:/sc-project/logs
     depends_on:
-      project-db:
+      mysql:
         condition: service_healthy
         restart: true
     networks:
-      - project-network
+      - network
+volumes:
+  logs:
+    name: project-logs
+  db-data:
+    name: project-db
 networks:
-  project-network:
+  network:
+    name: project-network
