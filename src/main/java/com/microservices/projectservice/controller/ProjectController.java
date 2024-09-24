@@ -1,5 +1,6 @@
 package com.microservices.projectservice.controller;
 
+import com.microservices.projectservice.constant.ProjectQueryType;
 import com.microservices.projectservice.constant.ProjectStatus;
 import com.microservices.projectservice.dto.request.ProjectCreateRequest;
 import com.microservices.projectservice.dto.request.ProjectMemberRequest;
@@ -38,12 +39,11 @@ public class ProjectController {
     })
     public List<ProjectResponse> getAllProjects(
             @PathVariable String userId,
-            @RequestParam(required = false, defaultValue = "true") boolean isOwner,
+            @RequestParam(required = false, defaultValue = "ALL") ProjectQueryType query,
             @RequestParam(required = false, defaultValue = "NORMAL") ProjectStatus status,
             @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
             @RequestParam(required = false, defaultValue = "6") Integer pageSize) {
-        return isOwner ? projectService.getAllOwnProjects(userId, status, pageNumber, pageSize)
-                : projectService.getAllJoinProjects(userId, status, pageNumber, pageSize);
+        return projectService.getAllProjects(userId, query, status, pageNumber, pageSize);
     }
 
     @GetMapping(path = "/{projectId}")

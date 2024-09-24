@@ -1,5 +1,6 @@
 package com.microservices.projectservice.service;
 
+import com.microservices.projectservice.constant.ProjectQueryType;
 import com.microservices.projectservice.constant.ProjectStatus;
 import com.microservices.projectservice.dto.request.ProjectCreateRequest;
 import com.microservices.projectservice.dto.request.ProjectMemberRequest;
@@ -37,8 +38,9 @@ public class ProjectService {
         return mapProjectToResponse(project);
     }
 
-    public List<ProjectResponse> getAllOwnProjects(
+    public List<ProjectResponse> getAllProjects(
             @NotBlank(message = "User ID cannot be null/blank when getting all own projects.") String userId,
+            @NotNull(message = "Query type cannot be null when getting all own projects.") ProjectQueryType query,
             @NotNull(message = "Project status cannot be null when getting all own projects.") ProjectStatus status,
             @Min(value = 0, message = "Invalid page number (must positive) when getting all own projects.")
             @NotNull(message = "Page number cannot be null when getting all own projects.")
@@ -46,30 +48,15 @@ public class ProjectService {
             @Min(value = 1, message = "Invalid page size (must greater than 0) when getting all own projects.")
             @NotNull(message = "Page size cannot be null when getting all own projects.")
             Integer pageSize
-    ) throws NoEntityFoundException {
+    ) {
         var pageable = createPageable(pageNumber, pageSize);
-        var user = findUser(userId);
+        var projects = switch (query) {
+            case ALL -> projectRepository.findAllProjectByUserId(userId, pageable);
+            case OWN -> projectRepository.findAllByOwner_Id(userId, pageable);
+            case JOIN -> projectRepository.findAllByMembers_Id(userId, pageable);
+        };
 
-        return projectRepository.findAllByOwner(user, pageable).stream()
-                .filter(project -> project.getStatus().equals(status))
-                .map(this::mapProjectToResponse)
-                .toList();
-    }
-
-    public List<ProjectResponse> getAllJoinProjects(
-            @NotBlank(message = "User ID cannot be null/blank when getting all join projects.") String userId,
-            @NotNull(message = "Project status cannot be null when getting all join projects.") ProjectStatus status,
-            @Min(value = 0, message = "Invalid page number (must positive) when getting all join projects.")
-            @NotNull(message = "Page number cannot be null when getting all join projects.")
-            Integer pageNumber,
-            @Min(value = 1, message = "Invalid page size (must greater than 0) when getting all join projects.")
-            @NotNull(message = "Page size cannot be null when getting all join projects.")
-            Integer pageSize
-    ) throws NoEntityFoundException {
-        var pageable = createPageable(pageNumber, pageSize);
-        var user = findUser(userId);
-
-        return projectRepository.findAllByMembersContains(user, pageable).stream()
+        return projects.stream()
                 .filter(project -> project.getStatus().equals(status))
                 .map(this::mapProjectToResponse)
                 .toList();
@@ -183,11 +170,6 @@ public class ProjectService {
     private Project findProject(String projectId) throws NoEntityFoundException {
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
-    }
-
-    private User findUser(String userId) throws NoEntityFoundException {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new NoEntityFoundException("No user found with id: " + userId));
     }
 
     private Pageable createPageable(Integer pageNumber, Integer pageSize) {
