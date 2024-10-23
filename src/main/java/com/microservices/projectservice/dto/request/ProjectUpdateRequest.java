@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.time.LocalDate;
 
 public record ProjectUpdateRequest(
+        String thumbnailId,
         String name,
         String description,
         ProjectStatus status,

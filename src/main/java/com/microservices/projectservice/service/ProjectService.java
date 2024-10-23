@@ -112,6 +112,12 @@ public class ProjectService {
         var isUpdated = false;
         var project = findProject(projectId);
 
+        var thumbnailId = projectUpdateRequest.thumbnailId();
+        if (thumbnailId != null) {
+            project.setThumbnailId(thumbnailId);
+            isUpdated = true;
+        }
+
         String name = projectUpdateRequest.name(),
                 description = projectUpdateRequest.description();
         if (name != null) {
