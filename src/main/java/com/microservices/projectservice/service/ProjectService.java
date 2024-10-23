@@ -71,18 +71,16 @@ public class ProjectService {
         if (startDate != null && endDate != null && startDate.isAfter(endDate))
             throw new IllegalAttributeException("Project start date cannot be greater than end date.");
 
-        String userOwnerId = projectCreateRequest.ownerId();
-
+        var userOwnerId = projectCreateRequest.ownerId();
+        var owner = userRepository.findById(userOwnerId)
+                .orElse(User.builder().id(userOwnerId).build());
         var projectBuilder = Project.builder().name(projectCreateRequest.name())
                 .thumbnailId(projectCreateRequest.thumbnailId())
                 .description(projectCreateRequest.description())
                 .startDate(startDate)
                 .endDate(endDate)
-                .status(ProjectStatus.NORMAL);
-        userRepository.findById(userOwnerId).ifPresentOrElse(
-                projectBuilder::owner,
-                () -> projectBuilder.owner(User.builder().id(userOwnerId).build())
-        );
+                .status(ProjectStatus.NORMAL)
+                .owner(owner);
 
         var memberIds = projectCreateRequest.memberIds();
         if (memberIds != null) {
@@ -113,7 +111,7 @@ public class ProjectService {
         var project = findProject(projectId);
 
         var thumbnailId = projectUpdateRequest.thumbnailId();
-        if (thumbnailId != null) {
+        if (thumbnailId != null && !thumbnailId.equals(project.getThumbnailId())) {
             project.setThumbnailId(thumbnailId);
             isUpdated = true;
         }
@@ -125,7 +123,9 @@ public class ProjectService {
             project.setName(name);
             isUpdated = true;
         }
-        if (description != null) project.setDescription(description);
+
+        if (description != null)
+            project.setDescription(description);
 
         var status = projectUpdateRequest.status();
         if (status != null) {
@@ -155,15 +155,29 @@ public class ProjectService {
             @NotNull(message = "Updating project member data cannot be null.")
             @Valid
             ProjectMemberRequest projectMemberRequest
-    ) throws NoEntityFoundException {
+    ) throws NoEntityFoundException, DataConflictException {
+        var isUpdated = false;
         var project = findProject(projectId);
         var memberId = projectMemberRequest.memberId();
 
         switch (projectMemberRequest.operator()) {
-            case ADD -> project.getMembers().add(User.builder().id(memberId).build());
-            case REMOVE -> project.getMembers().removeIf(user -> user.getId().equals(memberId));
+            case ADD -> {
+                var existMembers = project.getMembers();
+                var isMemberIdExisted = existMembers.stream()
+                        .anyMatch(member -> member.getId().equals(memberId));
+                if (isMemberIdExisted)
+                    throw new DataConflictException("Member already exists.");
+                existMembers.add(User.builder().id(memberId).build());
+                isUpdated = true;
+            }
+            case REMOVE -> {
+                var isRemoved = project.getMembers()
+                        .removeIf(user -> user.getId().equals(memberId));
+                if (isRemoved) isUpdated = true;
+                else throw new DataConflictException("Member does not exist.");
+            }
         }
-        projectRepository.save(project);
+        if (isUpdated) projectRepository.save(project);
     }
 
     public void deleteProject(

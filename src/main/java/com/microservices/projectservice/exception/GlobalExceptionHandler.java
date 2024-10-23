@@ -28,4 +28,10 @@ public class GlobalExceptionHandler {
         return e.getMessage();
     }
 
+    @ExceptionHandler(DataConflictException.class)
+    @ResponseStatus(code = HttpStatus.CONFLICT)
+    public String handleDataConflictException(DataConflictException e) {
+        return e.getMessage();
+    }
+
 }
