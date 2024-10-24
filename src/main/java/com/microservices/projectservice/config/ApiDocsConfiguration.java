@@ -20,7 +20,7 @@ public class ApiDocsConfiguration {
         return new OpenAPI()
                 .info(new Info()
                         .title("Project Service")
-                        .version("1.0")
+                        .version("1.0.0")
                         .description(
                                 "This is a set of services which is developed for sample collecting projects using by Expert. " +
                                 "It supports to manage projects, forms, stages and samples."

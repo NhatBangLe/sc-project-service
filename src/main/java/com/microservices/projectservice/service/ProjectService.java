@@ -1,5 +1,6 @@
 package com.microservices.projectservice.service;
 
+import com.microservices.projectservice.constant.ProjectQueryType;
 import com.microservices.projectservice.constant.ProjectStatus;
 import com.microservices.projectservice.dto.request.ProjectCreateRequest;
 import com.microservices.projectservice.dto.request.ProjectMemberRequest;
@@ -37,8 +38,9 @@ public class ProjectService {
         return mapProjectToResponse(project);
     }
 
-    public List<ProjectResponse> getAllOwnProjects(
+    public List<ProjectResponse> getAllProjects(
             @NotBlank(message = "User ID cannot be null/blank when getting all own projects.") String userId,
+            @NotNull(message = "Query type cannot be null when getting all own projects.") ProjectQueryType query,
             @NotNull(message = "Project status cannot be null when getting all own projects.") ProjectStatus status,
             @Min(value = 0, message = "Invalid page number (must positive) when getting all own projects.")
             @NotNull(message = "Page number cannot be null when getting all own projects.")
@@ -46,30 +48,15 @@ public class ProjectService {
             @Min(value = 1, message = "Invalid page size (must greater than 0) when getting all own projects.")
             @NotNull(message = "Page size cannot be null when getting all own projects.")
             Integer pageSize
-    ) throws NoEntityFoundException {
+    ) {
         var pageable = createPageable(pageNumber, pageSize);
-        var user = findUser(userId);
+        var projects = switch (query) {
+            case ALL -> projectRepository.findAllProjectByUserId(userId, pageable);
+            case OWN -> projectRepository.findAllByOwner_Id(userId, pageable);
+            case JOIN -> projectRepository.findAllByMembers_Id(userId, pageable);
+        };
 
-        return projectRepository.findAllByOwner(user, pageable).stream()
-                .filter(project -> project.getStatus().equals(status))
-                .map(this::mapProjectToResponse)
-                .toList();
-    }
-
-    public List<ProjectResponse> getAllJoinProjects(
-            @NotBlank(message = "User ID cannot be null/blank when getting all join projects.") String userId,
-            @NotNull(message = "Project status cannot be null when getting all join projects.") ProjectStatus status,
-            @Min(value = 0, message = "Invalid page number (must positive) when getting all join projects.")
-            @NotNull(message = "Page number cannot be null when getting all join projects.")
-            Integer pageNumber,
-            @Min(value = 1, message = "Invalid page size (must greater than 0) when getting all join projects.")
-            @NotNull(message = "Page size cannot be null when getting all join projects.")
-            Integer pageSize
-    ) throws NoEntityFoundException {
-        var pageable = createPageable(pageNumber, pageSize);
-        var user = findUser(userId);
-
-        return projectRepository.findAllByMembersContains(user, pageable).stream()
+        return projects.stream()
                 .filter(project -> project.getStatus().equals(status))
                 .map(this::mapProjectToResponse)
                 .toList();
@@ -84,18 +71,16 @@ public class ProjectService {
         if (startDate != null && endDate != null && startDate.isAfter(endDate))
             throw new IllegalAttributeException("Project start date cannot be greater than end date.");
 
-        String userOwnerId = projectCreateRequest.ownerId();
-
+        var userOwnerId = projectCreateRequest.ownerId();
+        var owner = userRepository.findById(userOwnerId)
+                .orElse(User.builder().id(userOwnerId).build());
         var projectBuilder = Project.builder().name(projectCreateRequest.name())
                 .thumbnailId(projectCreateRequest.thumbnailId())
                 .description(projectCreateRequest.description())
                 .startDate(startDate)
                 .endDate(endDate)
-                .status(ProjectStatus.NORMAL);
-        userRepository.findById(userOwnerId).ifPresentOrElse(
-                projectBuilder::owner,
-                () -> projectBuilder.owner(User.builder().id(userOwnerId).build())
-        );
+                .status(ProjectStatus.NORMAL)
+                .owner(owner);
 
         var memberIds = projectCreateRequest.memberIds();
         if (memberIds != null) {
@@ -125,6 +110,12 @@ public class ProjectService {
         var isUpdated = false;
         var project = findProject(projectId);
 
+        var thumbnailId = projectUpdateRequest.thumbnailId();
+        if (thumbnailId != null && !thumbnailId.equals(project.getThumbnailId())) {
+            project.setThumbnailId(thumbnailId);
+            isUpdated = true;
+        }
+
         String name = projectUpdateRequest.name(),
                 description = projectUpdateRequest.description();
         if (name != null) {
@@ -132,7 +123,9 @@ public class ProjectService {
             project.setName(name);
             isUpdated = true;
         }
-        if (description != null) project.setDescription(description);
+
+        if (description != null)
+            project.setDescription(description);
 
         var status = projectUpdateRequest.status();
         if (status != null) {
@@ -162,15 +155,29 @@ public class ProjectService {
             @NotNull(message = "Updating project member data cannot be null.")
             @Valid
             ProjectMemberRequest projectMemberRequest
-    ) throws NoEntityFoundException {
+    ) throws NoEntityFoundException, DataConflictException {
+        var isUpdated = false;
         var project = findProject(projectId);
         var memberId = projectMemberRequest.memberId();
 
         switch (projectMemberRequest.operator()) {
-            case ADD -> project.getMembers().add(User.builder().id(memberId).build());
-            case REMOVE -> project.getMembers().removeIf(user -> user.getId().equals(memberId));
+            case ADD -> {
+                var existMembers = project.getMembers();
+                var isMemberIdExisted = existMembers.stream()
+                        .anyMatch(member -> member.getId().equals(memberId));
+                if (isMemberIdExisted)
+                    throw new DataConflictException("Member already exists.");
+                existMembers.add(User.builder().id(memberId).build());
+                isUpdated = true;
+            }
+            case REMOVE -> {
+                var isRemoved = project.getMembers()
+                        .removeIf(user -> user.getId().equals(memberId));
+                if (isRemoved) isUpdated = true;
+                else throw new DataConflictException("Member does not exist.");
+            }
         }
-        projectRepository.save(project);
+        if (isUpdated) projectRepository.save(project);
     }
 
     public void deleteProject(
@@ -183,11 +190,6 @@ public class ProjectService {
     private Project findProject(String projectId) throws NoEntityFoundException {
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
-    }
-
-    private User findUser(String userId) throws NoEntityFoundException {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new NoEntityFoundException("No user found with id: " + userId));
     }
 
     private Pageable createPageable(Integer pageNumber, Integer pageSize) {
