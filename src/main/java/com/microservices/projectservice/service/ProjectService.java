@@ -18,7 +18,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -49,7 +49,7 @@ public class ProjectService {
             @NotNull(message = "Page size cannot be null when getting all own projects.")
             Integer pageSize
     ) {
-        var pageable = createPageable(pageNumber, pageSize);
+        var pageable = PageRequest.of(pageNumber, pageSize, Sort.by("createdAt").descending());
         var projects = switch (query) {
             case ALL -> projectRepository.findAllProjectByUserIdAndStatus(userId, status, pageable);
             case OWN -> projectRepository.findAllByOwner_IdAndStatus(userId, status, pageable);
@@ -196,10 +196,6 @@ public class ProjectService {
     private Project findProject(String projectId) throws NoEntityFoundException {
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
-    }
-
-    private Pageable createPageable(Integer pageNumber, Integer pageSize) {
-        return PageRequest.of(pageNumber, pageSize);
     }
 
     private ProjectResponse mapProjectToResponse(Project project) {

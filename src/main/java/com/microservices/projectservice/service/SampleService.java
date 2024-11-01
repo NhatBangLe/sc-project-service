@@ -18,6 +18,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -50,7 +51,7 @@ public class SampleService {
         if (!projectRepository.existsById(projectId))
             throw new NoEntityFoundException("No project found with id: " + projectId);
 
-        var pageable = PageRequest.of(pageNumber, pageSize);
+        var pageable = PageRequest.of(pageNumber, pageSize, Sort.by("createdAt").descending());
         var samples = sampleRepository.findAllByProjectOwner_IdOrderByCreatedAtAsc(projectId, pageable);
         return new PagingObjectsResponse<>(
                 samples.getTotalPages(),
@@ -76,7 +77,7 @@ public class SampleService {
         if (!stageRepository.existsById(stageId))
             throw new NoEntityFoundException("No stage found with id: " + stageId);
 
-        var pageable = PageRequest.of(pageNumber, pageSize);
+        var pageable = PageRequest.of(pageNumber, pageSize, Sort.by("createdAt").descending());
         var samples = sampleRepository.findAllByStage_IdOrderByCreatedAtAsc(stageId, pageable);
         return new PagingObjectsResponse<>(
                 samples.getTotalPages(),

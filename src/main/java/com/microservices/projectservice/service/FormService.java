@@ -17,6 +17,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -40,7 +41,7 @@ public class FormService {
         if (!projectRepository.existsById(projectId))
             throw new NoEntityFoundException("No project found with id: " + projectId);
 
-        var pageable = PageRequest.of(pageNumber, pageSize);
+        var pageable = PageRequest.of(pageNumber, pageSize, Sort.by("createdAt").descending());
         var forms = formRepository.findAllByProjectOwner_Id(projectId, pageable)
                 .map(this::mapToResponse);
         return new PagingObjectsResponse<>(
