@@ -41,7 +41,7 @@ public class StageService {
             @NotNull(message = "Page size cannot be null when getting all stages.")
             Integer pageSize
     ) {
-        if (projectRepository.existsById(projectId))
+        if (!projectRepository.existsById(projectId))
             throw new NoEntityFoundException("No project found with id: " + projectId);
         var pageable = PageRequest.of(pageNumber, pageSize);
         var stages = stageRepository.findAllByProjectOwner_Id(projectId, pageable);
