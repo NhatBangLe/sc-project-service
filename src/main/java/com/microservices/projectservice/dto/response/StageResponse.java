@@ -12,5 +12,6 @@ public record StageResponse(String id,
                             LocalDate startDate,
                             LocalDate endDate,
                             String formId,
+                            Long createdAt,
                             String projectOwnerId) implements Serializable {
   }

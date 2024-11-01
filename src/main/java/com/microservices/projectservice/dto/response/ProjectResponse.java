@@ -16,6 +16,7 @@ public record ProjectResponse(
         String description,
         LocalDate startDate,
         LocalDate endDate,
+        Long createdAt,
         String ownerId,
         List<String> memberIds
 ) implements Serializable {

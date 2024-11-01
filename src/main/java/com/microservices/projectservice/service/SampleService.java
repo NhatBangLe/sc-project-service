@@ -51,7 +51,7 @@ public class SampleService {
             throw new NoEntityFoundException("No project found with id: " + projectId);
 
         var pageable = PageRequest.of(pageNumber, pageSize);
-        var samples = sampleRepository.findAllByProjectOwner_IdOrderByCreatedTimestampAsc(projectId, pageable);
+        var samples = sampleRepository.findAllByProjectOwner_IdOrderByCreatedAtAsc(projectId, pageable);
         return new PagingObjectsResponse<>(
                 samples.getTotalPages(),
                 samples.getTotalElements(),
@@ -77,7 +77,7 @@ public class SampleService {
             throw new NoEntityFoundException("No stage found with id: " + stageId);
 
         var pageable = PageRequest.of(pageNumber, pageSize);
-        var samples = sampleRepository.findAllByStage_IdOrderByCreatedTimestampAsc(stageId, pageable);
+        var samples = sampleRepository.findAllByStage_IdOrderByCreatedAtAsc(stageId, pageable);
         return new PagingObjectsResponse<>(
                 samples.getTotalPages(),
                 samples.getTotalElements(),
@@ -226,6 +226,7 @@ public class SampleService {
                                 field.getId(),
                                 field.getNumberOrder(),
                                 field.getName(),
+                                field.getCreatedAt().getTime(),
                                 field.getForm().getId()
                         );
                         return new SampleResponse.AnswerResponse(
@@ -242,7 +243,8 @@ public class SampleService {
                             dField.getId(),
                             dField.getName(),
                             dField.getValue(),
-                            dField.getNumberOrder()
+                            dField.getNumberOrder(),
+                            dField.getCreatedAt().getTime()
                     ))
                     .sorted(Comparator.comparingInt(SampleResponse.DynamicFieldResponse::numberOrder))
                     .toList();
@@ -251,7 +253,7 @@ public class SampleService {
                 sample.getId(),
                 sample.getAttachmentId(),
                 sample.getPosition(),
-                sample.getCreatedTimestamp(),
+                sample.getCreatedAt().getTime(),
                 sample.getProjectOwner().getId(),
                 sample.getStage().getId(),
                 answerResponses,

@@ -1,9 +1,11 @@
 package com.microservices.projectservice.entity.answer;
 
+import com.microservices.projectservice.entity.AuditableEntity;
 import com.microservices.projectservice.entity.Field;
 import com.microservices.projectservice.entity.Sample;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Getter
 @Setter
@@ -12,7 +14,8 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @Table(name = "answer")
-public class Answer {
+@EntityListeners(AuditingEntityListener.class)
+public class Answer extends AuditableEntity {
     @EmbeddedId
     private AnswerPK primaryKey;
 

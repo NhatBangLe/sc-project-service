@@ -211,6 +211,7 @@ public class ProjectService {
                 project.getDescription(),
                 project.getStartDate(),
                 project.getEndDate(),
+                project.getCreatedAt().getTime(),
                 project.getOwner().getId(),
                 memberIds
         );

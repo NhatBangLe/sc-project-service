@@ -3,6 +3,7 @@ package com.microservices.projectservice.entity;
 import com.microservices.projectservice.constant.ProjectStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -15,7 +16,8 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 @Table(name = "PROJECT")
-public class Project {
+@EntityListeners(AuditingEntityListener.class)
+public class Project extends AuditableEntity {
     @Id
     @Column(length = 36)
     @GeneratedValue(strategy = GenerationType.UUID)

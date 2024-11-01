@@ -2,6 +2,7 @@ package com.microservices.projectservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Getter
 @Setter
@@ -10,7 +11,8 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @Table(name = "DYNAMIC_FIELD")
-public class DynamicField {
+@EntityListeners(AuditingEntityListener.class)
+public class DynamicField extends AuditableEntity {
     @Id
     @Column(length = 36)
     @GeneratedValue(strategy = GenerationType.UUID)

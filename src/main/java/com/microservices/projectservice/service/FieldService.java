@@ -183,6 +183,7 @@ public class FieldService {
                 field.getId(),
                 field.getNumberOrder(),
                 field.getName(),
+                field.getCreatedAt().getTime(),
                 field.getForm().getId()
         );
     }

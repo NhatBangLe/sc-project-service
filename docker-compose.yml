@@ -10,42 +10,42 @@ services:
       MYSQL_DATABASE: ${DB_NAME}
     env_file:
       - .env
-    healthcheck:
-      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
-      interval: 10s
-      timeout: 10s
-      retries: 3
-    volumes:
-      - db-data:/var/lib/mysql
-    networks:
-      - network
-  project-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: project-service
-    ports:
-      - "${SERVICE_PORT}:8080"
-    environment:
-      PROFILE_ACTIVE: dev
-      DB_HOST: mysql:3306
-      ROOT_LOG_LEVEL: error
-      WEB_LOG_LEVEL: debug
-    env_file:
-      - .env
-    volumes:
-      - logs:/sc-project/logs
-    depends_on:
-      mysql:
-        condition: service_healthy
-        restart: true
-    networks:
-      - network
-volumes:
-  logs:
-    name: project-logs
-  db-data:
-    name: project-db
-networks:
-  network:
-    name: project-network
+#    healthcheck:
+#      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+#      interval: 10s
+#      timeout: 10s
+#      retries: 3
+#    volumes:
+#      - db-data:/var/lib/mysql
+#    networks:
+#      - network
+#  project-service:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: project-service
+#    ports:
+#      - "${SERVICE_PORT}:8080"
+#    environment:
+#      PROFILE_ACTIVE: dev
+#      DB_HOST: mysql:3306
+#      ROOT_LOG_LEVEL: error
+#      WEB_LOG_LEVEL: debug
+#    env_file:
+#      - .env
+#    volumes:
+#      - logs:/sc-project/logs
+#    depends_on:
+#      mysql:
+#        condition: service_healthy
+#        restart: true
+#    networks:
+#      - network
+#volumes:
+#  logs:
+#    name: project-logs
+#  db-data:
+#    name: project-db
+#networks:
+#  network:
+#    name: project-network

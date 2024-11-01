@@ -165,6 +165,7 @@ public class StageService {
                 stage.getStartDate(),
                 stage.getEndDate(),
                 stage.getForm().getId(),
+                stage.getCreatedAt().getTime(),
                 stage.getProjectOwner().getId()
         );
     }

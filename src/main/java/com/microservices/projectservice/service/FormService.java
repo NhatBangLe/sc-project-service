@@ -42,16 +42,7 @@ public class FormService {
 
         var pageable = PageRequest.of(pageNumber, pageSize);
         var forms = formRepository.findAllByProjectOwner_Id(projectId, pageable)
-                .map(form -> {
-                    var usageStageIds = form.getUsageStages().parallelStream().map(Stage::getId).toList();
-                    return new FormResponse(
-                            form.getId(),
-                            form.getTitle(),
-                            form.getDescription(),
-                            form.getProjectOwner().getId(),
-                            usageStageIds
-                    );
-                });
+                .map(this::mapToResponse);
         return new PagingObjectsResponse<>(
                 forms.getTotalPages(),
                 forms.getTotalElements(),
@@ -68,15 +59,7 @@ public class FormService {
             @NotBlank(message = "Form ID cannot be null/blank when getting a form.") String formId
     ) throws NoEntityFoundException {
         var form = findForm(formId);
-        var usageStageIds = form.getUsageStages().stream().map(Stage::getId).toList();
-
-        return new FormResponse(
-                form.getId(),
-                form.getTitle(),
-                form.getDescription(),
-                form.getProjectOwner().getId(),
-                usageStageIds
-        );
+        return mapToResponse(form);
     }
 
     public String createForm(
@@ -133,6 +116,18 @@ public class FormService {
     private Project findProject(String projectId) throws NoEntityFoundException {
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
+    }
+
+    private FormResponse mapToResponse(Form form) {
+        var usageStageIds = form.getUsageStages().stream().map(Stage::getId).toList();
+        return new FormResponse(
+                form.getId(),
+                form.getTitle(),
+                form.getDescription(),
+                form.getProjectOwner().getId(),
+                form.getCreatedAt().getTime(),
+                usageStageIds
+        );
     }
 
 }

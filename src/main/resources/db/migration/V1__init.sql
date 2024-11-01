@@ -1,5 +1,7 @@
 CREATE TABLE project_service.answer
 (
+    created_at   datetime     NULL,
+    updated_at   datetime     NULL,
     value        VARCHAR(255) NOT NULL,
     fk_sample_id VARCHAR(255) NOT NULL,
     fk_field_id  VARCHAR(255) NOT NULL,
@@ -9,6 +11,8 @@ CREATE TABLE project_service.answer
 CREATE TABLE project_service.dynamic_field
 (
     id           VARCHAR(36)   NOT NULL,
+    created_at   datetime      NULL,
+    updated_at   datetime      NULL,
     name         VARCHAR(255)  NOT NULL,
     value        VARCHAR(255)  NOT NULL,
     number_order INT DEFAULT 0 NOT NULL,
@@ -19,6 +23,8 @@ CREATE TABLE project_service.dynamic_field
 CREATE TABLE project_service.field
 (
     id           VARCHAR(36)   NOT NULL,
+    created_at   datetime      NULL,
+    updated_at   datetime      NULL,
     number_order INT DEFAULT 0 NOT NULL,
     name         VARCHAR(255)  NOT NULL,
     fk_form_id   VARCHAR(36)   NOT NULL,
@@ -28,6 +34,8 @@ CREATE TABLE project_service.field
 CREATE TABLE project_service.form
 (
     id            VARCHAR(36)  NOT NULL,
+    created_at    datetime     NULL,
+    updated_at    datetime     NULL,
     title         VARCHAR(255) NOT NULL,
     `description` VARCHAR(255) NULL,
     fk_project_id VARCHAR(36)  NOT NULL,
@@ -37,6 +45,9 @@ CREATE TABLE project_service.form
 CREATE TABLE project_service.project
 (
     id            VARCHAR(36)        NOT NULL,
+    created_at    datetime           NULL,
+    updated_at    datetime           NULL,
+    thumbnail_id  VARCHAR(255)       NULL,
     name          VARCHAR(255)       NOT NULL,
     `description` VARCHAR(255)       NULL,
     status        SMALLINT DEFAULT 0 NOT NULL,
@@ -55,18 +66,21 @@ CREATE TABLE project_service.project_member
 
 CREATE TABLE project_service.sample
 (
-    id                VARCHAR(36)  NOT NULL,
-    position          VARCHAR(255) NULL,
-    attachment_id     VARCHAR(255) NOT NULL,
-    created_timestamp datetime     NULL,
-    fk_project_id     VARCHAR(36)  NOT NULL,
-    fk_stage_id       VARCHAR(36)  NOT NULL,
+    id            VARCHAR(36)  NOT NULL,
+    created_at    datetime     NULL,
+    updated_at    datetime     NULL,
+    position      VARCHAR(255) NULL,
+    attachment_id VARCHAR(255) NOT NULL,
+    fk_project_id VARCHAR(36)  NOT NULL,
+    fk_stage_id   VARCHAR(36)  NOT NULL,
     CONSTRAINT pk_sample PRIMARY KEY (id)
 );
 
 CREATE TABLE project_service.stage
 (
     id            VARCHAR(36)  NOT NULL,
+    created_at    datetime     NULL,
+    updated_at    datetime     NULL,
     name          VARCHAR(255) NOT NULL,
     `description` VARCHAR(255) NULL,
     start_date    date         NULL,
@@ -78,7 +92,9 @@ CREATE TABLE project_service.stage
 
 CREATE TABLE project_service.user
 (
-    id VARCHAR(36) NOT NULL,
+    id         VARCHAR(36) NOT NULL,
+    created_at datetime    NULL,
+    updated_at datetime    NULL,
     CONSTRAINT pk_user PRIMARY KEY (id)
 );
 

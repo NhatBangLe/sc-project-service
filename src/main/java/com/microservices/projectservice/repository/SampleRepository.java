@@ -6,6 +6,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SampleRepository extends JpaRepository<Sample, String> {
-    Page<Sample> findAllByProjectOwner_IdOrderByCreatedTimestampAsc(String projectId, Pageable pageable);
-    Page<Sample> findAllByStage_IdOrderByCreatedTimestampAsc(String stageId, Pageable pageable);
+    Page<Sample> findAllByProjectOwner_IdOrderByCreatedAtAsc(String projectId, Pageable pageable);
+    Page<Sample> findAllByStage_IdOrderByCreatedAtAsc(String stageId, Pageable pageable);
 }
