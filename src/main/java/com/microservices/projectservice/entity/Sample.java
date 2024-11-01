@@ -3,9 +3,8 @@ package com.microservices.projectservice.entity;
 import com.microservices.projectservice.entity.answer.Answer;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.sql.Timestamp;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -16,7 +15,8 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @Table(name = "SAMPLE")
-public class Sample {
+@EntityListeners(AuditingEntityListener.class)
+public class Sample extends AuditableEntity {
     @Id
     @Column(length = 36)
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -27,9 +27,6 @@ public class Sample {
 
     @Column(nullable = false)
     private String attachmentId;
-
-    @CreationTimestamp
-    private Timestamp createdTimestamp;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_project_id", nullable = false, referencedColumnName = "id")

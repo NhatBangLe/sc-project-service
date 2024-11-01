@@ -2,6 +2,7 @@ package com.microservices.projectservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -13,7 +14,8 @@ import java.util.Set;
 @Builder
 @Entity
 @Table(name = "USER")
-public class User {
+@EntityListeners(AuditingEntityListener.class)
+public class User extends AuditableEntity {
     @Id
     @Column(length = 36)
     private String id;

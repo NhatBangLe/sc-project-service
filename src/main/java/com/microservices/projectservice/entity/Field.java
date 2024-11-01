@@ -3,6 +3,7 @@ package com.microservices.projectservice.entity;
 import com.microservices.projectservice.entity.answer.Answer;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -14,7 +15,8 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @Table(name = "FIELD")
-public class Field {
+@EntityListeners(AuditingEntityListener.class)
+public class Field extends AuditableEntity {
     @Id
     @Column(length = 36)
     @GeneratedValue(strategy = GenerationType.UUID)

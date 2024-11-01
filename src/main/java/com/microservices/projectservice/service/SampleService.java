@@ -4,6 +4,7 @@ import com.microservices.projectservice.dto.request.AnswerUpsertRequest;
 import com.microservices.projectservice.dto.request.SampleCreateRequest;
 import com.microservices.projectservice.dto.request.SampleUpdateRequest;
 import com.microservices.projectservice.dto.response.FieldResponse;
+import com.microservices.projectservice.dto.response.PagingObjectsResponse;
 import com.microservices.projectservice.dto.response.SampleResponse;
 import com.microservices.projectservice.entity.*;
 import com.microservices.projectservice.entity.answer.Answer;
@@ -17,6 +18,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -37,7 +39,7 @@ public class SampleService {
     private final AnswerRepository answerRepository;
     private final DynamicFieldRepository dynamicFieldRepository;
 
-    public List<SampleResponse> getAllSamplesByProjectId(
+    public PagingObjectsResponse<SampleResponse> getAllSamplesByProjectId(
             @NotBlank(message = "Project ID cannot be null/blank when getting all samples.") String projectId,
             @Min(value = 0, message = "Invalid page number (must positive) when getting all samples.")
             @NotNull(message = "Page number cannot be null when finding all samples.")
@@ -46,17 +48,24 @@ public class SampleService {
             @NotNull(message = "Page size cannot be null when finding all samples.")
             Integer pageSize
     ) throws NoEntityFoundException {
-        var project = findProject(projectId);
-        var pageable = PageRequest.of(pageNumber, pageSize);
+        if (!projectRepository.existsById(projectId))
+            throw new NoEntityFoundException("No project found with id: " + projectId);
 
-        return sampleRepository
-                .findAllByProjectOwnerOrderByCreatedTimestampAsc(project, pageable)
-                .stream()
-                .map(this::mapSampleToResponse)
-                .toList();
+        var pageable = PageRequest.of(pageNumber, pageSize, Sort.by("createdAt").descending());
+        var samples = sampleRepository.findAllByProjectOwner_IdOrderByCreatedAtAsc(projectId, pageable);
+        return new PagingObjectsResponse<>(
+                samples.getTotalPages(),
+                samples.getTotalElements(),
+                samples.getNumber(),
+                samples.getSize(),
+                samples.getNumberOfElements(),
+                samples.isFirst(),
+                samples.isLast(),
+                samples.map(this::mapSampleToResponse).toList()
+        );
     }
 
-    public List<SampleResponse> getAllSamplesByStageId(
+    public PagingObjectsResponse<SampleResponse> getAllSamplesByStageId(
             @NotBlank(message = "Stage ID cannot be null/blank when getting all samples.") String stageId,
             @Min(value = 0, message = "Invalid page number (must positive) when getting all samples.")
             @NotNull(message = "Page number cannot be null when finding all samples.")
@@ -65,14 +74,21 @@ public class SampleService {
             @NotNull(message = "Page size cannot be null when finding all samples.")
             Integer pageSize
     ) throws NoEntityFoundException {
-        var stage = findStage(stageId);
-        var pageable = PageRequest.of(pageNumber, pageSize);
+        if (!stageRepository.existsById(stageId))
+            throw new NoEntityFoundException("No stage found with id: " + stageId);
 
-        return sampleRepository
-                .findAllByStageOrderByCreatedTimestampAsc(stage, pageable)
-                .stream()
-                .map(this::mapSampleToResponse)
-                .toList();
+        var pageable = PageRequest.of(pageNumber, pageSize, Sort.by("createdAt").descending());
+        var samples = sampleRepository.findAllByStage_IdOrderByCreatedAtAsc(stageId, pageable);
+        return new PagingObjectsResponse<>(
+                samples.getTotalPages(),
+                samples.getTotalElements(),
+                samples.getNumber(),
+                samples.getSize(),
+                samples.getNumberOfElements(),
+                samples.isFirst(),
+                samples.isLast(),
+                samples.map(this::mapSampleToResponse).toList()
+        );
     }
 
     public SampleResponse getSample(
@@ -211,6 +227,7 @@ public class SampleService {
                                 field.getId(),
                                 field.getNumberOrder(),
                                 field.getName(),
+                                field.getCreatedAt().getTime(),
                                 field.getForm().getId()
                         );
                         return new SampleResponse.AnswerResponse(
@@ -227,7 +244,8 @@ public class SampleService {
                             dField.getId(),
                             dField.getName(),
                             dField.getValue(),
-                            dField.getNumberOrder()
+                            dField.getNumberOrder(),
+                            dField.getCreatedAt().getTime()
                     ))
                     .sorted(Comparator.comparingInt(SampleResponse.DynamicFieldResponse::numberOrder))
                     .toList();
@@ -236,7 +254,7 @@ public class SampleService {
                 sample.getId(),
                 sample.getAttachmentId(),
                 sample.getPosition(),
-                sample.getCreatedTimestamp(),
+                sample.getCreatedAt().getTime(),
                 sample.getProjectOwner().getId(),
                 sample.getStage().getId(),
                 answerResponses,

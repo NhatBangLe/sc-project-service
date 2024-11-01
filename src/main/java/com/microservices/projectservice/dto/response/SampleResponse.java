@@ -1,7 +1,6 @@
 package com.microservices.projectservice.dto.response;
 
 import java.io.Serializable;
-import java.sql.Timestamp;
 import java.util.List;
 
 /**
@@ -11,7 +10,7 @@ public record SampleResponse(
         String id,
         String attachmentId,
         String position,
-        Timestamp createdTimestamp,
+        Long createdAt,
         String projectOwnerId,
         String stageId,
         List<AnswerResponse> answers,
@@ -33,7 +32,8 @@ public record SampleResponse(
             String id,
             String name,
             String value,
-            Integer numberOrder
+            Integer numberOrder,
+            Long createdAt
     ) implements Serializable {
     }
 }

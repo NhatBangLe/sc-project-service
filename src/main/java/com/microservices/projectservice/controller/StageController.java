@@ -1,6 +1,7 @@
 package com.microservices.projectservice.controller;
 
 import com.microservices.projectservice.dto.request.StageCreateRequest;
+import com.microservices.projectservice.dto.response.PagingObjectsResponse;
 import com.microservices.projectservice.dto.response.StageResponse;
 import com.microservices.projectservice.dto.request.StageUpdateRequest;
 import com.microservices.projectservice.service.StageService;
@@ -12,8 +13,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping(path = "/api/${API.VERSION}/stage")
@@ -34,9 +33,9 @@ public class StageController {
             ),
             @ApiResponse(responseCode = "404", description = "Project ID is not available.", content = @Content)
     })
-    public List<StageResponse> getAllStages(@PathVariable String projectId,
-                                            @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
-                                            @RequestParam(required = false, defaultValue = "6") Integer pageSize) {
+    public PagingObjectsResponse<StageResponse> getAllStages(@PathVariable String projectId,
+                                                             @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
+                                                             @RequestParam(required = false, defaultValue = "6") Integer pageSize) {
         return stageService.getAllStages(projectId, pageNumber, pageSize);
     }
 

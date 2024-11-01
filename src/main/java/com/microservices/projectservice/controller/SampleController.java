@@ -3,6 +3,7 @@ package com.microservices.projectservice.controller;
 import com.microservices.projectservice.dto.request.AnswerUpsertRequest;
 import com.microservices.projectservice.dto.request.SampleCreateRequest;
 import com.microservices.projectservice.dto.request.SampleUpdateRequest;
+import com.microservices.projectservice.dto.response.PagingObjectsResponse;
 import com.microservices.projectservice.dto.response.SampleResponse;
 import com.microservices.projectservice.service.SampleService;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -12,8 +13,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping(path = "/api/${API.VERSION}/sample")
@@ -26,7 +25,7 @@ public class SampleController {
     @GetMapping(path = "/{projectId}/project")
     @ResponseStatus(HttpStatus.OK)
     @ApiResponse(responseCode = "404", description = "Project ID is not available.", content = @Content)
-    public List<SampleResponse> getAllSamplesByProjectId(
+    public PagingObjectsResponse<SampleResponse> getAllSamplesByProjectId(
             @PathVariable String projectId,
             @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
             @RequestParam(required = false, defaultValue = "6") Integer pageSize
@@ -37,7 +36,7 @@ public class SampleController {
     @GetMapping(path = "/{stageId}/stage")
     @ResponseStatus(HttpStatus.OK)
     @ApiResponse(responseCode = "404", description = "Stage ID is not available.", content = @Content)
-    public List<SampleResponse> getAllSamplesByStageId(
+    public PagingObjectsResponse<SampleResponse> getAllSamplesByStageId(
             @PathVariable String stageId,
             @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
             @RequestParam(required = false, defaultValue = "6") Integer pageSize

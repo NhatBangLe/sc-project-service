@@ -5,6 +5,7 @@ import com.microservices.projectservice.constant.ProjectStatus;
 import com.microservices.projectservice.dto.request.ProjectCreateRequest;
 import com.microservices.projectservice.dto.request.ProjectMemberRequest;
 import com.microservices.projectservice.dto.request.ProjectUpdateRequest;
+import com.microservices.projectservice.dto.response.PagingObjectsResponse;
 import com.microservices.projectservice.dto.response.ProjectResponse;
 import com.microservices.projectservice.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,8 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping(path = "/api/${API.VERSION}/project")
@@ -37,7 +36,7 @@ public class ProjectController {
             ),
             @ApiResponse(responseCode = "404", description = "User ID is not available.", content = @Content)
     })
-    public List<ProjectResponse> getAllProjects(
+    public PagingObjectsResponse<ProjectResponse> getAllProjects(
             @PathVariable String userId,
             @RequestParam(required = false, defaultValue = "ALL") ProjectQueryType query,
             @RequestParam(required = false, defaultValue = "NORMAL") ProjectStatus status,
