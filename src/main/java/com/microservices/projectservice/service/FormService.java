@@ -3,6 +3,7 @@ package com.microservices.projectservice.service;
 import com.microservices.projectservice.dto.request.FormCreateRequest;
 import com.microservices.projectservice.dto.response.FormResponse;
 import com.microservices.projectservice.dto.request.FormUpdateRequest;
+import com.microservices.projectservice.dto.response.PagingObjectsResponse;
 import com.microservices.projectservice.entity.Form;
 import com.microservices.projectservice.entity.Project;
 import com.microservices.projectservice.entity.Stage;
@@ -19,8 +20,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
-import java.util.List;
-
 @Service
 @Validated
 @RequiredArgsConstructor
@@ -29,7 +28,7 @@ public class FormService {
     private final FormRepository formRepository;
     private final ProjectRepository projectRepository;
 
-    public List<FormResponse> getAllForms(
+    public PagingObjectsResponse<FormResponse> getAllForms(
             @NotBlank(message = "Project ID cannot be null/blank when getting all forms.") String projectId,
             @Min(value = 0, message = "Invalid page number (must positive) when getting all forms.")
             @NotNull(message = "Page number cannot be null when getting all forms.")
@@ -38,20 +37,31 @@ public class FormService {
             @NotNull(message = "Page size cannot be null when getting all forms.")
             Integer pageSize
     ) throws NoEntityFoundException {
-        var pageable = PageRequest.of(pageNumber, pageSize);
-        var projectOwner = projectRepository.findById(projectId)
-                .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
+        if (!projectRepository.existsById(projectId))
+            throw new NoEntityFoundException("No project found with id: " + projectId);
 
-        return formRepository.findAllByProjectOwner(projectOwner, pageable).stream().map(form -> {
-            var usageStageIds = form.getUsageStages().parallelStream().map(Stage::getId).toList();
-            return new FormResponse(
-                    form.getId(),
-                    form.getTitle(),
-                    form.getDescription(),
-                    form.getProjectOwner().getId(),
-                    usageStageIds
-            );
-        }).toList();
+        var pageable = PageRequest.of(pageNumber, pageSize);
+        var forms = formRepository.findAllByProjectOwner_Id(projectId, pageable)
+                .map(form -> {
+                    var usageStageIds = form.getUsageStages().parallelStream().map(Stage::getId).toList();
+                    return new FormResponse(
+                            form.getId(),
+                            form.getTitle(),
+                            form.getDescription(),
+                            form.getProjectOwner().getId(),
+                            usageStageIds
+                    );
+                });
+        return new PagingObjectsResponse<>(
+                forms.getTotalPages(),
+                forms.getTotalElements(),
+                forms.getNumber(),
+                forms.getSize(),
+                forms.getNumberOfElements(),
+                forms.isFirst(),
+                forms.isLast(),
+                forms.toList()
+        );
     }
 
     public FormResponse getForm(

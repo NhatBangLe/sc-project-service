@@ -4,6 +4,7 @@ import com.microservices.projectservice.constant.ProjectQueryType;
 import com.microservices.projectservice.constant.ProjectStatus;
 import com.microservices.projectservice.dto.request.ProjectCreateRequest;
 import com.microservices.projectservice.dto.request.ProjectMemberRequest;
+import com.microservices.projectservice.dto.response.PagingObjectsResponse;
 import com.microservices.projectservice.dto.response.ProjectResponse;
 import com.microservices.projectservice.dto.request.ProjectUpdateRequest;
 import com.microservices.projectservice.entity.Project;
@@ -23,7 +24,6 @@ import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
 import java.util.HashSet;
-import java.util.List;
 
 @Service
 @Validated
@@ -38,7 +38,7 @@ public class ProjectService {
         return mapProjectToResponse(project);
     }
 
-    public List<ProjectResponse> getAllProjects(
+    public PagingObjectsResponse<ProjectResponse> getAllProjects(
             @NotBlank(message = "User ID cannot be null/blank when getting all own projects.") String userId,
             @NotNull(message = "Query type cannot be null when getting all own projects.") ProjectQueryType query,
             @NotNull(message = "Project status cannot be null when getting all own projects.") ProjectStatus status,
@@ -51,15 +51,21 @@ public class ProjectService {
     ) {
         var pageable = createPageable(pageNumber, pageSize);
         var projects = switch (query) {
-            case ALL -> projectRepository.findAllProjectByUserId(userId, pageable);
-            case OWN -> projectRepository.findAllByOwner_Id(userId, pageable);
-            case JOIN -> projectRepository.findAllByMembers_Id(userId, pageable);
+            case ALL -> projectRepository.findAllProjectByUserIdAndStatus(userId, status, pageable);
+            case OWN -> projectRepository.findAllByOwner_IdAndStatus(userId, status, pageable);
+            case JOIN -> projectRepository.findAllByMembers_IdAndStatus(userId, status, pageable);
         };
 
-        return projects.stream()
-                .filter(project -> project.getStatus().equals(status))
-                .map(this::mapProjectToResponse)
-                .toList();
+        return new PagingObjectsResponse<>(
+                projects.getTotalPages(),
+                projects.getTotalElements(),
+                projects.getNumber(),
+                projects.getSize(),
+                projects.getNumberOfElements(),
+                projects.isFirst(),
+                projects.isLast(),
+                projects.map(this::mapProjectToResponse).toList()
+        );
     }
 
     public String createProject(

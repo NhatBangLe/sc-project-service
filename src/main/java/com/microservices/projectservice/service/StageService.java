@@ -1,6 +1,7 @@
 package com.microservices.projectservice.service;
 
 import com.microservices.projectservice.dto.request.StageCreateRequest;
+import com.microservices.projectservice.dto.response.PagingObjectsResponse;
 import com.microservices.projectservice.dto.response.StageResponse;
 import com.microservices.projectservice.dto.request.StageUpdateRequest;
 import com.microservices.projectservice.entity.Form;
@@ -21,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @Service
 @Validated
@@ -32,7 +32,7 @@ public class StageService {
     private final ProjectRepository projectRepository;
     private final FormRepository formRepository;
 
-    public List<StageResponse> getAllStages(
+    public PagingObjectsResponse<StageResponse> getAllStages(
             @NotBlank(message = "Project ID cannot be null/blank when getting all stages.") String projectId,
             @Min(value = 0, message = "Invalid page number (must positive) when getting all stages.")
             @NotNull(message = "Page number cannot be null when getting all stages.")
@@ -41,11 +41,20 @@ public class StageService {
             @NotNull(message = "Page size cannot be null when getting all stages.")
             Integer pageSize
     ) {
+        if (projectRepository.existsById(projectId))
+            throw new NoEntityFoundException("No project found with id: " + projectId);
         var pageable = PageRequest.of(pageNumber, pageSize);
-        var project = findProject(projectId);
-        return stageRepository.findAllByProjectOwner(project, pageable).stream()
-                .map(this::mapStageToResponse)
-                .toList();
+        var stages = stageRepository.findAllByProjectOwner_Id(projectId, pageable);
+        return new PagingObjectsResponse<>(
+                stages.getTotalPages(),
+                stages.getTotalElements(),
+                stages.getNumber(),
+                stages.getSize(),
+                stages.getNumberOfElements(),
+                stages.isFirst(),
+                stages.isLast(),
+                stages.map(this::mapStageToResponse).toList()
+        );
     }
 
     public StageResponse getStage(

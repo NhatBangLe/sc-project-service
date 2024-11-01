@@ -3,6 +3,7 @@ package com.microservices.projectservice.controller;
 import com.microservices.projectservice.dto.request.FormCreateRequest;
 import com.microservices.projectservice.dto.response.FormResponse;
 import com.microservices.projectservice.dto.request.FormUpdateRequest;
+import com.microservices.projectservice.dto.response.PagingObjectsResponse;
 import com.microservices.projectservice.service.FormService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -12,8 +13,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping(path = "/api/${API.VERSION}/form")
@@ -34,9 +33,9 @@ public class FormController {
             ),
             @ApiResponse(responseCode = "404", description = "Project ID is not available.", content = @Content)
     })
-    public List<FormResponse> getAllForms(@PathVariable String projectId,
-                                          @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
-                                          @RequestParam(required = false, defaultValue = "6") Integer pageSize) {
+    public PagingObjectsResponse<FormResponse> getAllForms(@PathVariable String projectId,
+                                                           @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
+                                                           @RequestParam(required = false, defaultValue = "6") Integer pageSize) {
         return formService.getAllForms(projectId, pageNumber, pageSize);
     }
 
