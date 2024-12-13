@@ -1,11 +1,14 @@
 package com.microservices.projectservice.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
+@Slf4j
 @Service
 public class FileService {
 
@@ -19,11 +22,18 @@ public class FileService {
                 .build();
     }
 
-    public ResponseEntity<String> deleteFile(String fileId) {
-        return client.delete()
-                .uri(fileId)
-                .retrieve()
-                .toEntity(String.class);
+    public ResponseEntity<String> deleteFile(String fileId) throws HttpClientErrorException {
+        try {
+            return client.delete()
+                    .uri("/{fileId}" + fileId)
+                    .retrieve()
+                    .toEntity(String.class);
+        } catch (HttpClientErrorException exception) {
+            log.warn(exception.getMessage(), exception);
+            return ResponseEntity
+                    .status(exception.getStatusCode())
+                    .body(exception.getMessage());
+        }
     }
 
 }

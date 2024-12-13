@@ -1,11 +1,14 @@
 package com.microservices.projectservice.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
+@Slf4j
 @Service
 public class UserService {
 
@@ -20,10 +23,17 @@ public class UserService {
     }
 
     public ResponseEntity<?> getUser(String userId) {
-        return client.get()
-                .uri(userId)
-                .retrieve()
-                .toEntity(Object.class);
+        try {
+            return client.get()
+                    .uri("/{userId}", userId)
+                    .retrieve()
+                    .toEntity(Object.class);
+        } catch (HttpClientErrorException exception) {
+            log.warn(exception.getMessage(), exception);
+            return ResponseEntity
+                    .status(exception.getStatusCode())
+                    .body(exception.getMessage());
+        }
     }
 
 }
