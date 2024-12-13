@@ -33,6 +33,9 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
 
+    private final UserService userService;
+    private final FileService fileService;
+
     public ProjectResponse getProject(@NotNull String projectId) throws NoEntityFoundException {
         var project = findProject(projectId);
         return mapProjectToResponse(project);
@@ -80,13 +83,17 @@ public class ProjectService {
         var userOwnerId = projectCreateRequest.ownerId();
         var owner = userRepository.findById(userOwnerId)
                 .orElse(User.builder().id(userOwnerId).build());
-        var projectBuilder = Project.builder().name(projectCreateRequest.name())
-                .thumbnailId(projectCreateRequest.thumbnailId())
+        var projectBuilder = Project.builder()
+                .name(projectCreateRequest.name())
                 .description(projectCreateRequest.description())
                 .startDate(startDate)
                 .endDate(endDate)
                 .status(ProjectStatus.NORMAL)
                 .owner(owner);
+
+        var thumbnailId = projectCreateRequest.thumbnailId();
+        if (thumbnailId != null && !thumbnailId.isBlank())
+            projectBuilder.thumbnailId(thumbnailId);
 
         var memberIds = projectCreateRequest.memberIds();
         if (memberIds != null) {
@@ -99,7 +106,14 @@ public class ProjectService {
                 var existedIds = existedUsers.stream().map(User::getId).toList();
                 var newUsers = filteredMemberIds.stream()
                         .filter(id -> !existedIds.contains(id))
-                        .map(id -> User.builder().id(id).build())
+                        .map(id -> {
+                            // Check if user not exists
+                            var response = userService.getUser(id);
+                            if (response.getStatusCode().isError())
+                                throw new IllegalAttributeException("Member with id " + id + " not found.");
+
+                            return User.builder().id(id).build();
+                        })
                         .toList();
                 existedUsers.addAll(newUsers);
             }
@@ -112,13 +126,19 @@ public class ProjectService {
     public void updateProject(
             @NotBlank(message = "Project ID cannot be null/blank when updating a project.") String projectId,
             @NotNull(message = "Updating project data cannot be null.") ProjectUpdateRequest projectUpdateRequest
-    ) throws IllegalAttributeException, NoEntityFoundException {
+    ) throws IllegalAttributeException, NoEntityFoundException, DataConflictException {
         var isUpdated = false;
         var project = findProject(projectId);
 
-        var thumbnailId = projectUpdateRequest.thumbnailId();
-        if (thumbnailId != null && !thumbnailId.equals(project.getThumbnailId())) {
-            project.setThumbnailId(thumbnailId);
+        var currentThumbnailId = project.getThumbnailId();
+        var newThumbnailId = projectUpdateRequest.thumbnailId();
+        if (newThumbnailId != null &&
+            !newThumbnailId.isBlank() &&
+            !newThumbnailId.equals(currentThumbnailId)
+        ) {
+            if (currentThumbnailId != null) fileService.deleteFile(currentThumbnailId);
+
+            project.setThumbnailId(newThumbnailId);
             isUpdated = true;
         }
 
@@ -161,10 +181,14 @@ public class ProjectService {
             @NotNull(message = "Updating project member data cannot be null.")
             @Valid
             ProjectMemberRequest projectMemberRequest
-    ) throws NoEntityFoundException, DataConflictException {
+    ) throws NoEntityFoundException, DataConflictException, IllegalAttributeException {
+        var memberId = projectMemberRequest.memberId();
+        var response = userService.getUser(memberId);
+        if (response.getStatusCode().isError())
+            throw new IllegalAttributeException("Member with id " + memberId + " not found.");
+
         var isUpdated = false;
         var project = findProject(projectId);
-        var memberId = projectMemberRequest.memberId();
 
         switch (projectMemberRequest.operator()) {
             case ADD -> {
@@ -173,7 +197,10 @@ public class ProjectService {
                         .anyMatch(member -> member.getId().equals(memberId));
                 if (isMemberIdExisted)
                     throw new DataConflictException("Member already exists.");
-                existMembers.add(User.builder().id(memberId).build());
+
+                var user = userRepository.findById(memberId)
+                        .orElse(User.builder().id(memberId).build());
+                existMembers.add(user);
                 isUpdated = true;
             }
             case REMOVE -> {
@@ -190,6 +217,14 @@ public class ProjectService {
             @NotBlank(message = "Project ID cannot be null/blank when deleting a project.") String projectId
     ) throws NoEntityFoundException {
         var project = findProject(projectId);
+
+        var thumbnailId = project.getThumbnailId();
+        if (thumbnailId != null && !thumbnailId.isBlank())
+            fileService.deleteFile(thumbnailId);
+
+        // Removes sample images
+        project.getSamples().forEach(sample -> fileService.deleteFile(sample.getAttachmentId()));
+
         projectRepository.delete(project);
     }
 
