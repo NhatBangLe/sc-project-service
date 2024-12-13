@@ -103,8 +103,8 @@ public class SampleService {
             @Valid
             SampleCreateRequest sampleCreateRequest
     ) throws NoEntityFoundException {
-        var project = findProject(sampleCreateRequest.projectOwnerId());
         var stage = findStage(sampleCreateRequest.stageId());
+        var project = stage.getProjectOwner();
 
         // creating a sample
         var sample = sampleRepository.save(
@@ -194,11 +194,6 @@ public class SampleService {
     ) throws NoEntityFoundException {
         var sample = findSample(sampleId);
         sampleRepository.delete(sample);
-    }
-
-    private Project findProject(String projectId) throws NoEntityFoundException {
-        return projectRepository.findById(projectId)
-                .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
     }
 
     private Stage findStage(String stageId) throws NoEntityFoundException {
