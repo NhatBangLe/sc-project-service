@@ -2,6 +2,7 @@ package com.microservices.projectservice.dto.response;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * DTO for {@link com.microservices.projectservice.entity.Stage}
@@ -13,5 +14,7 @@ public record StageResponse(String id,
                             LocalDate endDate,
                             String formId,
                             Long createdAt,
-                            String projectOwnerId) implements Serializable {
-  }
+                            String projectOwnerId,
+                            List<String> memberIds
+) implements Serializable {
+}

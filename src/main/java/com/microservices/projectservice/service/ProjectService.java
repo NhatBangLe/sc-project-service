@@ -74,7 +74,7 @@ public class ProjectService {
     public String createProject(
             @NotNull(message = "Creating project data cannot be null.")
             @Valid ProjectCreateRequest projectCreateRequest
-    ) throws IllegalAttributeException {
+    ) throws IllegalAttributeException, DataConflictException {
         LocalDate startDate = projectCreateRequest.startDate(),
                 endDate = projectCreateRequest.endDate();
         if (startDate != null && endDate != null && startDate.isAfter(endDate))
@@ -110,7 +110,7 @@ public class ProjectService {
                             // Check if user not exists
                             var response = userService.getUser(id);
                             if (response.getStatusCode().isError())
-                                throw new IllegalAttributeException("Member with id " + id + " not found.");
+                                throw new DataConflictException("Member with id " + id + " not found.");
 
                             return User.builder().id(id).build();
                         })

@@ -1,5 +1,5 @@
 package com.microservices.projectservice.constant;
 
-public enum ProjectMemberOperator {
+public enum MemberOperator {
     ADD, REMOVE
 }

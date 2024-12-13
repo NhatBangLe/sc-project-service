@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.io.Serializable;
 
-public record ProjectMemberRequest(
+public record StageMemberRequest(
         @NotBlank(message = "Member ID cannot be null/blank.")
         String memberId,
         MemberOperator operator
