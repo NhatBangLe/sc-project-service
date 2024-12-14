@@ -25,7 +25,7 @@ public class FileService {
     public ResponseEntity<String> deleteFile(String fileId) throws HttpClientErrorException {
         try {
             return client.delete()
-                    .uri("/{fileId}" + fileId)
+                    .uri("/{fileId}", fileId)
                     .retrieve()
                     .toEntity(String.class);
         } catch (HttpClientErrorException exception) {
