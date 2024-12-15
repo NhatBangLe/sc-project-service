@@ -1,12 +1,15 @@
 package com.microservices.projectservice.service;
 
 import com.microservices.projectservice.dto.request.StageCreateRequest;
+import com.microservices.projectservice.dto.request.StageMemberRequest;
 import com.microservices.projectservice.dto.response.PagingObjectsResponse;
 import com.microservices.projectservice.dto.response.StageResponse;
 import com.microservices.projectservice.dto.request.StageUpdateRequest;
 import com.microservices.projectservice.entity.Form;
 import com.microservices.projectservice.entity.Project;
 import com.microservices.projectservice.entity.Stage;
+import com.microservices.projectservice.entity.User;
+import com.microservices.projectservice.exception.DataConflictException;
 import com.microservices.projectservice.exception.IllegalAttributeException;
 import com.microservices.projectservice.exception.NoEntityFoundException;
 import com.microservices.projectservice.repository.FormRepository;
@@ -23,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
+import java.util.stream.Collectors;
 
 @Service
 @Validated
@@ -32,6 +36,8 @@ public class StageService {
     private final StageRepository stageRepository;
     private final ProjectRepository projectRepository;
     private final FormRepository formRepository;
+
+    private final FileService fileService;
 
     public PagingObjectsResponse<StageResponse> getAllStages(
             @NotBlank(message = "Project ID cannot be null/blank when getting all stages.") String projectId,
@@ -90,6 +96,21 @@ public class StageService {
             stageBuilder.form(form);
         }
 
+        var memberIds = stageCreateRequest.memberIds();
+        var projectMembers = project.getMembers();
+        if (memberIds != null && projectMembers != null) {
+            var memberNotInProjectError = "There have user IDs not in the same project.";
+            if (projectMembers.size() < memberIds.size())
+                throw new IllegalAttributeException(memberNotInProjectError);
+
+            var newMembers = projectMembers.stream()
+                    .filter(user -> memberIds.contains(user.getId()))
+                    .collect(Collectors.toSet());
+            if (newMembers.size() < memberIds.size())
+                throw new IllegalAttributeException(memberNotInProjectError);
+            stageBuilder.members(newMembers);
+        }
+
         return stageRepository.save(stageBuilder.build()).getId();
     }
 
@@ -137,10 +158,50 @@ public class StageService {
         if (isUpdated) stageRepository.save(stage);
     }
 
+    public void updateMember(
+            @NotBlank(message = "Stage ID cannot be null/blank when updating member to stage.") String stageId,
+            @NotNull(message = "The updating data cannot be null.")
+            StageMemberRequest stageMemberRequest
+    ) throws NoEntityFoundException, IllegalAttributeException {
+        var memberId = stageMemberRequest.memberId();
+
+        var isUpdated = false;
+        var stage = findStage(stageId);
+
+        switch (stageMemberRequest.operator()) {
+            case ADD -> {
+                var existMembers = stage.getMembers();
+                var isMemberIdExisted = existMembers.stream()
+                        .anyMatch(member -> member.getId().equals(memberId));
+                if (isMemberIdExisted)
+                    throw new DataConflictException("Member already exists.");
+
+                stage.getProjectOwner().getMembers().forEach(member -> {
+                    if (member.getId().equals(memberId))
+                        existMembers.add(member);
+                });
+                if (existMembers.isEmpty())
+                    throw new DataConflictException("Member does not exist in the project.");
+                isUpdated = true;
+            }
+            case REMOVE -> {
+                var isRemoved = stage.getMembers()
+                        .removeIf(user -> user.getId().equals(memberId));
+                if (isRemoved) isUpdated = true;
+                else throw new DataConflictException("Member does not exist.");
+            }
+        }
+        if (isUpdated) stageRepository.save(stage);
+    }
+
     public void deleteStage(
             @NotBlank(message = "Stage ID cannot be null/blank when deleting a stage.") String stageId
     ) throws NoEntityFoundException {
         var stage = findStage(stageId);
+
+        // Delete all sample images
+        stage.getSamples().forEach(sample -> fileService.deleteFile(sample.getAttachmentId()));
+
         stageRepository.delete(stage);
     }
 
@@ -160,6 +221,7 @@ public class StageService {
     }
 
     private StageResponse mapStageToResponse(Stage stage) {
+        var memberIds = stage.getMembers().parallelStream().map(User::getId).toList();
         return new StageResponse(
                 stage.getId(),
                 stage.getName(),
@@ -168,7 +230,9 @@ public class StageService {
                 stage.getEndDate(),
                 stage.getForm().getId(),
                 stage.getCreatedAt().getTime(),
-                stage.getProjectOwner().getId()
+                stage.getProjectOwner().getId(),
+                memberIds
         );
     }
+
 }

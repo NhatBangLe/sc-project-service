@@ -5,6 +5,7 @@ services:
     ports:
       - "2706:3306"
     environment:
+      MYSQL_ROOT_PASSWORD: root
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
@@ -36,6 +37,8 @@ services:
       EUREKA_IP_ADDR: 127.0.0.1
       EUREKA_PORT: 80
       REGISTER_ZONE: service-registry-1
+      FILE_SERVICE_ID: file-service
+      USER_SERVICE_ID: user-service
       DEFAULT_ZONE: http://admin:admin@service-registry:80/eureka/
       SWAGGER_SERVER_URL: http://gateway:80
     env_file:

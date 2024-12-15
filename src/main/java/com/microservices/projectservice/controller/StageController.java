@@ -1,6 +1,7 @@
 package com.microservices.projectservice.controller;
 
 import com.microservices.projectservice.dto.request.StageCreateRequest;
+import com.microservices.projectservice.dto.request.StageMemberRequest;
 import com.microservices.projectservice.dto.response.PagingObjectsResponse;
 import com.microservices.projectservice.dto.response.StageResponse;
 import com.microservices.projectservice.dto.request.StageUpdateRequest;
@@ -82,6 +83,22 @@ public class StageController {
     })
     public void updateStage(@PathVariable String stageId, @RequestBody StageUpdateRequest stageUpdateRequest) {
         stageService.updateStage(stageId, stageUpdateRequest);
+    }
+
+    @PatchMapping(path = "/{stageId}/member")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Stage member updated successfully."
+            ),
+            @ApiResponse(responseCode = "400",
+                    description = "Member ID is null/blank, Invalid operator or an member is not in project."),
+            @ApiResponse(responseCode = "404", description = "Stage ID is not available.")
+    })
+    public void updateProjectMember(@PathVariable String stageId,
+                                    @RequestBody StageMemberRequest stageMemberRequest) {
+        stageService.updateMember(stageId, stageMemberRequest);
     }
 
     @DeleteMapping(path = "/{stageId}")

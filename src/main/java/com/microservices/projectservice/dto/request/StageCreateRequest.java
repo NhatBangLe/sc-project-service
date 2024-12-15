@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.List;
 
 public record StageCreateRequest(
         @NotBlank(message = "Stage name cannot be null/blank when creating a stage.")
@@ -13,6 +14,7 @@ public record StageCreateRequest(
         LocalDate endDate,
         String formId,
         @NotBlank(message = "Project owner ID cannot be null/blank when creating a stage.")
-        String projectOwnerId
+        String projectOwnerId,
+        List<String> memberIds
 ) implements Serializable {
 }

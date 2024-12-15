@@ -39,6 +39,8 @@ public class SampleService {
     private final AnswerRepository answerRepository;
     private final DynamicFieldRepository dynamicFieldRepository;
 
+    private final FileService fileService;
+
     public PagingObjectsResponse<SampleResponse> getAllSamplesByProjectId(
             @NotBlank(message = "Project ID cannot be null/blank when getting all samples.") String projectId,
             @Min(value = 0, message = "Invalid page number (must positive) when getting all samples.")
@@ -118,18 +120,17 @@ public class SampleService {
 
         var answerUpsertRequests = sampleCreateRequest.answers();
         if (answerUpsertRequests != null) {
-            var answers = answerUpsertRequests.stream()
-                    .map(answerCreateRequest -> {
-                                var field = findField(answerCreateRequest.fieldId());
-                                var primaryKey = new AnswerPK(field.getId(), sample.getId());
-                                return Answer.builder()
-                                        .primaryKey(primaryKey)
-                                        .value(answerCreateRequest.value())
-                                        .field(field)
-                                        .sample(sample)
-                                        .build();
-                            }
-                    ).collect(Collectors.toSet());
+            var answers = answerUpsertRequests.stream().map(answerCreateRequest -> {
+                        var field = findField(answerCreateRequest.fieldId());
+                        var primaryKey = new AnswerPK(field.getId(), sample.getId());
+                        return Answer.builder()
+                                .primaryKey(primaryKey)
+                                .value(answerCreateRequest.value())
+                                .field(field)
+                                .sample(sample)
+                                .build();
+                    }
+            ).collect(Collectors.toSet());
             answerRepository.saveAll(answers);
         }
 
@@ -156,11 +157,13 @@ public class SampleService {
         var sample = findSample(sampleId);
         var isUpdated = false;
 
-        var attachmentId = sampleUpdateRequest.attachmentId();
-        if (attachmentId != null) {
-            if (attachmentId.isBlank())
+        var currentAttachmentId = sample.getAttachmentId();
+        var newAttachmentId = sampleUpdateRequest.attachmentId();
+        if (newAttachmentId != null) {
+            if (newAttachmentId.isBlank())
                 throw new IllegalAttributeException("Attachment ID cannot be blank when updating a field.");
-            sample.setAttachmentId(attachmentId);
+            if (currentAttachmentId != null) fileService.deleteFile(currentAttachmentId);
+            sample.setAttachmentId(newAttachmentId);
             isUpdated = true;
         }
 
@@ -193,6 +196,10 @@ public class SampleService {
             @NotBlank(message = "Sample ID cannot be null/blank when deleting a answer.") String sampleId
     ) throws NoEntityFoundException {
         var sample = findSample(sampleId);
+
+        var attachmentId = sample.getAttachmentId();
+        if (attachmentId != null) fileService.deleteFile(attachmentId);
+
         sampleRepository.delete(sample);
     }
 

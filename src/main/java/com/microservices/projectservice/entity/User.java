@@ -26,4 +26,7 @@ public class User extends AuditableEntity {
     @ManyToMany(mappedBy = "members", fetch = FetchType.LAZY)
     private Set<Project> joinProjects = new HashSet<>();
 
+    @ManyToMany(mappedBy = "members", fetch = FetchType.LAZY)
+    private Set<Stage> joinStages = new HashSet<>();
+
 }

@@ -5,7 +5,9 @@ import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -32,6 +34,14 @@ public class Stage extends AuditableEntity {
 
     @Column
     private LocalDate endDate;
+
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.REFRESH})
+    @JoinTable(
+            name = "stage_member",
+            joinColumns = @JoinColumn(name = "stage_id", referencedColumnName = "id", nullable = false),
+            inverseJoinColumns = @JoinColumn(name = "member_id", referencedColumnName = "id", nullable = false)
+    )
+    private Set<User> members = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_form_id", referencedColumnName = "id")
