@@ -52,6 +52,14 @@ public class ProjectController {
         return projectService.getProject(projectId);
     }
 
+    @GetMapping(path = "/{projectId}/stage/{userId}")
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(description = "Check if userId joined any stages in the project.")
+    public boolean checkUserInAnyStage(@PathVariable String projectId,
+                                       @PathVariable String userId) {
+        return projectService.checkUserInAnyStage(projectId, userId);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @ApiResponses(value = {

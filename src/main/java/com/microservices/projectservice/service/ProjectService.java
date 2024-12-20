@@ -11,6 +11,7 @@ import com.microservices.projectservice.entity.Project;
 import com.microservices.projectservice.entity.User;
 import com.microservices.projectservice.exception.*;
 import com.microservices.projectservice.repository.ProjectRepository;
+import com.microservices.projectservice.repository.StageRepository;
 import com.microservices.projectservice.repository.UserRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -32,6 +33,7 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final StageRepository stageRepository;
 
     private final UserService userService;
     private final FileService fileService;
@@ -121,6 +123,10 @@ public class ProjectService {
         }
 
         return projectRepository.save(projectBuilder.build()).getId();
+    }
+
+    public boolean checkUserInAnyStage(String projectId, String userId) {
+        return stageRepository.existsByProjectOwner_IdAndMembers_Id(projectId, userId);
     }
 
     public void updateProject(
