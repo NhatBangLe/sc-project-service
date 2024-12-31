@@ -1,6 +1,5 @@
 package com.microservices.projectservice.entity;
 
-import com.microservices.projectservice.entity.answer.Answer;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -14,7 +13,12 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "SAMPLE")
+@Table(
+        name = "SAMPLE",
+        indexes = {
+                @Index(name = "attachmentId_idx", columnList = "attachmentId")
+        }
+)
 @EntityListeners(AuditingEntityListener.class)
 public class Sample extends AuditableEntity {
     @Id
@@ -25,20 +29,20 @@ public class Sample extends AuditableEntity {
     @Column
     private String position;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 36, unique = true, updatable = false)
     private String attachmentId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_project_id", nullable = false, referencedColumnName = "id")
+    @ManyToOne
+    @JoinColumn(name = "fk_project_id", nullable = false, updatable = false, referencedColumnName = "id")
     private Project projectOwner;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_stage_id", nullable = false, referencedColumnName = "id")
+    @ManyToOne
+    @JoinColumn(name = "fk_stage_id", nullable = false, updatable = false, referencedColumnName = "id")
     private Stage stage;
 
-    @OneToMany(mappedBy = "sample", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "sample", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Set<Answer> answers = new HashSet<>();
 
-    @OneToMany(mappedBy = "sample", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "sample", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Set<DynamicField> dynamicFields = new HashSet<>();
 }

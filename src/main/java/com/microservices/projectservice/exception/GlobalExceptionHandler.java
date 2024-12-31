@@ -10,9 +10,16 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Hidden
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
     @ExceptionHandler(ConstraintViolationException.class)
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
     public String handleConstraintViolationException(ConstraintViolationException e) {
+        return e.getMessage();
+    }
+
+    @ExceptionHandler(IllegalAttributeException.class)
+    @ResponseStatus(code = HttpStatus.BAD_REQUEST)
+    public String handleIllegalAttributeException(IllegalAttributeException e) {
         return e.getMessage();
     }
 
@@ -22,9 +29,9 @@ public class GlobalExceptionHandler {
         return e.getMessage();
     }
 
-    @ExceptionHandler(IllegalAttributeException.class)
-    @ResponseStatus(code = HttpStatus.BAD_REQUEST)
-    public String handleIllegalAttributeException(IllegalAttributeException e) {
+    @ExceptionHandler(NullPointerException.class)
+    @ResponseStatus(code = HttpStatus.SERVICE_UNAVAILABLE)
+    public String handleNullPointerException(NullPointerException e) {
         return e.getMessage();
     }
 
