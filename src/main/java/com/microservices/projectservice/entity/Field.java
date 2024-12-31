@@ -1,6 +1,5 @@
 package com.microservices.projectservice.entity;
 
-import com.microservices.projectservice.entity.answer.Answer;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -22,14 +21,15 @@ public class Field extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false, columnDefinition = "int default 0")
-    private Integer numberOrder;
-
+    @Builder.Default
     @Column(nullable = false)
+    private Integer numberOrder = 0;
+
+    @Column(nullable = false, length = 100)
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_form_id", nullable = false, referencedColumnName = "id")
+    @JoinColumn(name = "fk_form_id", nullable = false, updatable = false, referencedColumnName = "id")
     private Form form;
 
     @OneToMany(mappedBy = "field", cascade = CascadeType.ALL)

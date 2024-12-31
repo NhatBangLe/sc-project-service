@@ -5,23 +5,30 @@ import com.microservices.projectservice.dto.request.StageMemberRequest;
 import com.microservices.projectservice.dto.response.PagingObjectsResponse;
 import com.microservices.projectservice.dto.response.StageResponse;
 import com.microservices.projectservice.dto.request.StageUpdateRequest;
+import com.microservices.projectservice.mapper.StageMapper;
 import com.microservices.projectservice.service.StageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+@Validated
 @RestController
-@RequestMapping(path = "/api/${API.VERSION}/stage")
+@RequestMapping(path = "/api/${app.api-version}/stage")
 @RequiredArgsConstructor
 @Tag(name = "Stage", description = "All endpoints about stages.")
 public class StageController {
 
     private final StageService stageService;
+    private final StageMapper mapper;
 
     @GetMapping(path = "/{projectId}/project")
     @ResponseStatus(HttpStatus.OK)
@@ -32,19 +39,42 @@ public class StageController {
                     description = "Invalid page number or page size.",
                     content = @Content
             ),
-            @ApiResponse(responseCode = "404", description = "Project ID is not available.", content = @Content)
+            @ApiResponse(responseCode = "404", description = "Project not found.", content = @Content)
     })
-    public PagingObjectsResponse<StageResponse> getAllStages(@PathVariable String projectId,
-                                                             @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
-                                                             @RequestParam(required = false, defaultValue = "6") Integer pageSize) {
-        return stageService.getAllStages(projectId, pageNumber, pageSize);
+    public PagingObjectsResponse<StageResponse> getAllStages(
+            @PathVariable
+            @Size(min = 36, max = 36, message = "projectId length must be 36 characters.")
+            String projectId,
+            @RequestParam(required = false, defaultValue = "0")
+            @Min(value = 0, message = "Invalid page number (cannot be less than 0).")
+            Integer pageNumber,
+            @RequestParam(required = false, defaultValue = "6")
+            @Min(value = 1, message = "Invalid page size (must greater than 0).")
+            Integer pageSize
+    ) {
+        var stages = stageService.getAllStages(projectId, pageNumber, pageSize);
+        return new PagingObjectsResponse<>(
+                stages.getTotalPages(),
+                stages.getTotalElements(),
+                stages.getNumber(),
+                stages.getSize(),
+                stages.getNumberOfElements(),
+                stages.isFirst(),
+                stages.isLast(),
+                stages.map(mapper::toResponse).toList()
+        );
     }
 
     @GetMapping(path = "/{stageId}")
     @ResponseStatus(HttpStatus.OK)
-    @ApiResponse(responseCode = "404", description = "Stage ID is not available.", content = @Content)
-    public StageResponse getStage(@PathVariable String stageId) {
-        return stageService.getStage(stageId);
+    @ApiResponse(responseCode = "404", description = "Stage not found.", content = @Content)
+    public StageResponse getStage(
+            @PathVariable
+            @Size(min = 36, max = 36, message = "stageId length must be 36 characters.")
+            String stageId
+    ) {
+        var stage = stageService.getStage(stageId);
+        return mapper.toResponse(stage);
     }
 
     @PostMapping
@@ -62,12 +92,12 @@ public class StageController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "Project owner ID or Form ID is not available.",
+                    description = "Project owner or Form not found.",
                     content = @Content
             )
     })
-    public String createStage(@RequestBody StageCreateRequest stageCreateRequest) {
-        return stageService.createStage(stageCreateRequest);
+    public String createStage(@RequestBody @Valid StageCreateRequest body) {
+        return stageService.createStage(body);
     }
 
     @PatchMapping(path = "/{stageId}")
@@ -81,8 +111,13 @@ public class StageController {
             ),
             @ApiResponse(responseCode = "404", description = "Form ID is not available.")
     })
-    public void updateStage(@PathVariable String stageId, @RequestBody StageUpdateRequest stageUpdateRequest) {
-        stageService.updateStage(stageId, stageUpdateRequest);
+    public void updateStage(
+            @PathVariable
+            @Size(min = 36, max = 36, message = "stageId length must be 36 characters.")
+            String stageId,
+            @RequestBody StageUpdateRequest body
+    ) {
+        stageService.updateStage(stageId, body);
     }
 
     @PatchMapping(path = "/{stageId}/member")
@@ -96,8 +131,12 @@ public class StageController {
                     description = "Member ID is null/blank, Invalid operator or an member is not in project."),
             @ApiResponse(responseCode = "404", description = "Stage ID is not available.")
     })
-    public void updateProjectMember(@PathVariable String stageId,
-                                    @RequestBody StageMemberRequest stageMemberRequest) {
+    public void updateProjectMember(
+            @PathVariable
+            @Size(min = 36, max = 36, message = "stageId length must be 36 characters.")
+            String stageId,
+            @RequestBody @Valid StageMemberRequest stageMemberRequest
+    ) {
         stageService.updateMember(stageId, stageMemberRequest);
     }
 
@@ -110,10 +149,14 @@ public class StageController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "Stage ID is not available."
+                    description = "Stage not found."
             )
     })
-    public void deleteStage(@PathVariable String stageId) {
+    public void deleteStage(
+            @PathVariable
+            @Size(min = 36, max = 36, message = "stageId length must be 36 characters.")
+            String stageId
+    ) {
         stageService.deleteStage(stageId);
     }
 

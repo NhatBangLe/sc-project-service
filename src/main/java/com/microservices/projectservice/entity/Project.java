@@ -23,17 +23,18 @@ public class Project extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column
+    @Column(length = 36, unique = true)
     private String thumbnailId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String name;
 
     @Column
     private String description;
 
-    @Column(nullable = false, columnDefinition = "smallint default 0")
-    private ProjectStatus status;
+    @Builder.Default
+    @Column(nullable = false)
+    private ProjectStatus status = ProjectStatus.NORMAL;
 
     @Column
     private LocalDate startDate;
@@ -42,11 +43,10 @@ public class Project extends AuditableEntity {
     private LocalDate endDate;
 
     @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinColumn(name = "fk_owner_id", nullable = false, referencedColumnName = "id")
+    @JoinColumn(name = "fk_owner_id", nullable = false, updatable = false, referencedColumnName = "id")
     private User owner;
 
-    @ManyToMany(fetch = FetchType.LAZY,
-            cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(
             name = "project_member",
             joinColumns = @JoinColumn(name = "project_id", referencedColumnName = "id", nullable = false),

@@ -6,7 +6,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -23,7 +22,7 @@ public class Stage extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String name;
 
     @Column
@@ -43,14 +42,14 @@ public class Stage extends AuditableEntity {
     )
     private Set<User> members = new HashSet<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "fk_form_id", referencedColumnName = "id")
     private Form form;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_project_id", nullable = false, referencedColumnName = "id")
+    @ManyToOne
+    @JoinColumn(name = "fk_project_id", nullable = false, updatable = false, referencedColumnName = "id")
     private Project projectOwner;
 
     @OneToMany(mappedBy = "stage", cascade = CascadeType.REMOVE, orphanRemoval = true)
-    private List<Sample> samples;
+    private Set<Sample> samples = new HashSet<>();
 }

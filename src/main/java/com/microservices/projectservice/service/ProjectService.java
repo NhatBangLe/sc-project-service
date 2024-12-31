@@ -4,8 +4,6 @@ import com.microservices.projectservice.constant.ProjectQueryType;
 import com.microservices.projectservice.constant.ProjectStatus;
 import com.microservices.projectservice.dto.request.ProjectCreateRequest;
 import com.microservices.projectservice.dto.request.ProjectMemberRequest;
-import com.microservices.projectservice.dto.response.PagingObjectsResponse;
-import com.microservices.projectservice.dto.response.ProjectResponse;
 import com.microservices.projectservice.dto.request.ProjectUpdateRequest;
 import com.microservices.projectservice.entity.Project;
 import com.microservices.projectservice.entity.User;
@@ -13,21 +11,17 @@ import com.microservices.projectservice.exception.*;
 import com.microservices.projectservice.repository.ProjectRepository;
 import com.microservices.projectservice.repository.StageRepository;
 import com.microservices.projectservice.repository.UserRepository;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.Objects;
 
 @Service
-@Validated
 @RequiredArgsConstructor
 public class ProjectService {
 
@@ -38,66 +32,56 @@ public class ProjectService {
     private final UserService userService;
     private final FileService fileService;
 
-    public ProjectResponse getProject(@NotNull String projectId) throws NoEntityFoundException {
-        var project = findProject(projectId);
-        return mapProjectToResponse(project);
+    public Project getProject(String projectId) throws NoEntityFoundException {
+        return projectRepository.findById(projectId)
+                .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
     }
 
-    public PagingObjectsResponse<ProjectResponse> getAllProjects(
-            @NotBlank(message = "User ID cannot be null/blank when getting all own projects.") String userId,
-            @NotNull(message = "Query type cannot be null when getting all own projects.") ProjectQueryType query,
-            @NotNull(message = "Project status cannot be null when getting all own projects.") ProjectStatus status,
-            @Min(value = 0, message = "Invalid page number (must positive) when getting all own projects.")
-            @NotNull(message = "Page number cannot be null when getting all own projects.")
-            Integer pageNumber,
-            @Min(value = 1, message = "Invalid page size (must greater than 0) when getting all own projects.")
-            @NotNull(message = "Page size cannot be null when getting all own projects.")
-            Integer pageSize
-    ) {
+    public Page<Project> getAllProjects(String userId, ProjectQueryType query,
+                                        ProjectStatus status, Integer pageNumber, Integer pageSize) {
         var pageable = PageRequest.of(pageNumber, pageSize, Sort.by("createdAt").descending());
-        var projects = switch (query) {
+        return switch (query) {
             case ALL -> projectRepository.findAllProjectByUserIdAndStatus(userId, status, pageable);
             case OWN -> projectRepository.findAllByOwner_IdAndStatus(userId, status, pageable);
             case JOIN -> projectRepository.findAllByMembers_IdAndStatus(userId, status, pageable);
         };
-
-        return new PagingObjectsResponse<>(
-                projects.getTotalPages(),
-                projects.getTotalElements(),
-                projects.getNumber(),
-                projects.getSize(),
-                projects.getNumberOfElements(),
-                projects.isFirst(),
-                projects.isLast(),
-                projects.map(this::mapProjectToResponse).toList()
-        );
     }
 
-    public String createProject(
-            @NotNull(message = "Creating project data cannot be null.")
-            @Valid ProjectCreateRequest projectCreateRequest
-    ) throws IllegalAttributeException, DataConflictException {
-        LocalDate startDate = projectCreateRequest.startDate(),
-                endDate = projectCreateRequest.endDate();
+    public String createProject(ProjectCreateRequest body) throws IllegalAttributeException {
+        LocalDate startDate = body.startDate(),
+                endDate = body.endDate();
         if (startDate != null && endDate != null && startDate.isAfter(endDate))
             throw new IllegalAttributeException("Project start date cannot be greater than end date.");
 
-        var userOwnerId = projectCreateRequest.ownerId();
+        var userOwnerId = body.ownerId();
+        var isOwnerExists = Objects.requireNonNull(
+                userService.checkUserExists(userOwnerId),
+                "Cannot check user owner existence for user id: " + userOwnerId
+        );
+        if (!isOwnerExists)
+            throw new IllegalAttributeException("User with id " + userOwnerId + " not found.");
         var owner = userRepository.findById(userOwnerId)
                 .orElse(User.builder().id(userOwnerId).build());
         var projectBuilder = Project.builder()
-                .name(projectCreateRequest.name())
-                .description(projectCreateRequest.description())
+                .name(body.name())
+                .description(body.description())
                 .startDate(startDate)
                 .endDate(endDate)
                 .status(ProjectStatus.NORMAL)
                 .owner(owner);
 
-        var thumbnailId = projectCreateRequest.thumbnailId();
-        if (thumbnailId != null && !thumbnailId.isBlank())
-            projectBuilder.thumbnailId(thumbnailId);
+        var thumbnailId = body.thumbnailId();
+        if (thumbnailId != null && !thumbnailId.isBlank()) {
+            var isThumbnailExists = Objects.requireNonNull(
+                    fileService.checkFileExists(thumbnailId),
+                    "Cannot check thumbnail existence."
+            );
+            if (!isThumbnailExists) throw new IllegalAttributeException("Thumbnail file does not exist.");
 
-        var memberIds = projectCreateRequest.memberIds();
+            projectBuilder.thumbnailId(thumbnailId);
+        }
+
+        var memberIds = body.memberIds();
         if (memberIds != null) {
             // take id not equal to ownerId only
             var filteredMemberIds = memberIds.stream().filter(id -> !id.equals(userOwnerId)).toList();
@@ -110,13 +94,15 @@ public class ProjectService {
                         .filter(id -> !existedIds.contains(id))
                         .map(id -> {
                             // Check if user not exists
-                            var response = userService.getUser(id);
-                            if (response.getStatusCode().isError())
-                                throw new DataConflictException("Member with id " + id + " not found.");
+                            var isExist = Objects.requireNonNull(
+                                    userService.checkUserExists(id),
+                                    "Cannot check existence for user id: " + id
+                            );
+                            if (!isExist)
+                                throw new IllegalAttributeException("User with id " + id + " not found.");
 
                             return User.builder().id(id).build();
-                        })
-                        .toList();
+                        }).toList();
                 existedUsers.addAll(newUsers);
             }
             projectBuilder.members(new HashSet<>(existedUsers));
@@ -129,15 +115,13 @@ public class ProjectService {
         return stageRepository.existsByProjectOwner_IdAndMembers_Id(projectId, userId);
     }
 
-    public void updateProject(
-            @NotBlank(message = "Project ID cannot be null/blank when updating a project.") String projectId,
-            @NotNull(message = "Updating project data cannot be null.") ProjectUpdateRequest projectUpdateRequest
-    ) throws IllegalAttributeException, NoEntityFoundException, DataConflictException {
+    public void updateProject(String projectId, ProjectUpdateRequest body)
+            throws IllegalAttributeException, NoEntityFoundException {
         var isUpdated = false;
-        var project = findProject(projectId);
+        var project = getProject(projectId);
 
         var currentThumbnailId = project.getThumbnailId();
-        var newThumbnailId = projectUpdateRequest.thumbnailId();
+        var newThumbnailId = body.thumbnailId();
         if (newThumbnailId != null &&
             !newThumbnailId.isBlank() &&
             !newThumbnailId.equals(currentThumbnailId)
@@ -148,8 +132,8 @@ public class ProjectService {
             isUpdated = true;
         }
 
-        String name = projectUpdateRequest.name(),
-                description = projectUpdateRequest.description();
+        String name = body.name(),
+                description = body.description();
         if (name != null) {
             if (name.isBlank()) throw new IllegalAttributeException("Project name cannot be empty.");
             project.setName(name);
@@ -159,14 +143,14 @@ public class ProjectService {
         if (description != null)
             project.setDescription(description);
 
-        var status = projectUpdateRequest.status();
+        var status = body.status();
         if (status != null) {
             project.setStatus(status);
             isUpdated = true;
         }
 
-        LocalDate startDate = projectUpdateRequest.startDate(),
-                endDate = projectUpdateRequest.endDate();
+        LocalDate startDate = body.startDate(),
+                endDate = body.endDate();
         if (startDate != null) {
             project.setStartDate(startDate);
             isUpdated = true;
@@ -182,21 +166,19 @@ public class ProjectService {
         if (isUpdated) projectRepository.save(project);
     }
 
-    public void updateMember(
-            @NotBlank(message = "Project ID cannot be null/blank when updating project member.") String projectId,
-            @NotNull(message = "Updating project member data cannot be null.")
-            @Valid
-            ProjectMemberRequest projectMemberRequest
-    ) throws NoEntityFoundException, DataConflictException, IllegalAttributeException {
-        var memberId = projectMemberRequest.memberId();
-        var response = userService.getUser(memberId);
-        if (response.getStatusCode().isError())
-            throw new IllegalAttributeException("Member with id " + memberId + " not found.");
+    public void updateMember(String projectId, ProjectMemberRequest body)
+            throws NoEntityFoundException, IllegalAttributeException {
+        var memberId = body.memberId();
+        var isExist = Objects.requireNonNull(
+                userService.checkUserExists(memberId),
+                "Cannot check existence for user id: " + memberId
+        );
+        if (!isExist) throw new IllegalAttributeException("Member with id " + memberId + " not found.");
 
         var isUpdated = false;
-        var project = findProject(projectId);
+        var project = getProject(projectId);
 
-        switch (projectMemberRequest.operator()) {
+        switch (body.operator()) {
             case ADD -> {
                 var existMembers = project.getMembers();
                 var isMemberIdExisted = existMembers.stream()
@@ -219,10 +201,8 @@ public class ProjectService {
         if (isUpdated) projectRepository.save(project);
     }
 
-    public void deleteProject(
-            @NotBlank(message = "Project ID cannot be null/blank when deleting a project.") String projectId
-    ) throws NoEntityFoundException {
-        var project = findProject(projectId);
+    public void deleteProject(String projectId) throws NoEntityFoundException {
+        var project = getProject(projectId);
 
         var thumbnailId = project.getThumbnailId();
         if (thumbnailId != null && !thumbnailId.isBlank())
@@ -232,26 +212,6 @@ public class ProjectService {
         project.getSamples().forEach(sample -> fileService.deleteFile(sample.getAttachmentId()));
 
         projectRepository.delete(project);
-    }
-
-    private Project findProject(String projectId) throws NoEntityFoundException {
-        return projectRepository.findById(projectId)
-                .orElseThrow(() -> new NoEntityFoundException("No project found with id: " + projectId));
-    }
-
-    private ProjectResponse mapProjectToResponse(Project project) {
-        var memberIds = project.getMembers().parallelStream().map(User::getId).toList();
-        return new ProjectResponse(
-                project.getId(),
-                project.getThumbnailId(),
-                project.getName(),
-                project.getDescription(),
-                project.getStartDate(),
-                project.getEndDate(),
-                project.getCreatedAt().getTime(),
-                project.getOwner().getId(),
-                memberIds
-        );
     }
 
 }

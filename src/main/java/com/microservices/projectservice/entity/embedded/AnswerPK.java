@@ -1,4 +1,4 @@
-package com.microservices.projectservice.entity.answer;
+package com.microservices.projectservice.entity.embedded;
 
 import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;

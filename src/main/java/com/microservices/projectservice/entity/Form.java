@@ -21,7 +21,7 @@ public class Form extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String title;
 
     @Column
@@ -30,8 +30,8 @@ public class Form extends AuditableEntity {
     @OneToMany(mappedBy = "form")
     private Set<Stage> usageStages = new HashSet<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_project_id", nullable = false, referencedColumnName = "id")
+    @ManyToOne
+    @JoinColumn(name = "fk_project_id", nullable = false, updatable = false, referencedColumnName = "id")
     private Project projectOwner;
 
     @OneToMany(mappedBy = "form", cascade = CascadeType.ALL)

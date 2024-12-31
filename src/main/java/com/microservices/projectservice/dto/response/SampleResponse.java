@@ -1,5 +1,7 @@
 package com.microservices.projectservice.dto.response;
 
+import com.microservices.projectservice.entity.Answer;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -17,7 +19,7 @@ public record SampleResponse(
         List<DynamicFieldResponse> dynamicFields
 ) implements Serializable {
     /**
-     * DTO for {@link com.microservices.projectservice.entity.answer.Answer}
+     * DTO for {@link Answer}
      */
     public record AnswerResponse(
             String value,

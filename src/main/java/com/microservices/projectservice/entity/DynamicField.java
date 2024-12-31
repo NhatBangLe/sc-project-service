@@ -18,16 +18,17 @@ public class DynamicField extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String name;
 
     @Column(nullable = false)
     private String value;
 
-    @Column(nullable = false, columnDefinition = "int default 0")
-    private Integer numberOrder;
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer numberOrder = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_sample_id", nullable = false, referencedColumnName = "id")
+    @JoinColumn(name = "fk_sample_id", nullable = false, updatable = false, referencedColumnName = "id")
     private Sample sample;
 }
