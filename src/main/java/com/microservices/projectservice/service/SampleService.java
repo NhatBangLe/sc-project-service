@@ -9,10 +9,11 @@ import com.microservices.projectservice.exception.IllegalAttributeException;
 import com.microservices.projectservice.exception.NoEntityFoundException;
 import com.microservices.projectservice.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
@@ -29,10 +30,15 @@ public class SampleService {
     private final DynamicFieldRepository dynamicFieldRepository;
 
     private final StageService stageService;
-    private final FieldService fieldService;
+    private FieldService fieldService;
     private final FileService fileService;
 
-    @NonNull
+    // Prevent circular dependency when initializing
+    @Autowired
+    public void setFieldService(@Lazy FieldService fieldService) {
+        this.fieldService = fieldService;
+    }
+
     public Page<Sample> getAllSamplesByProjectId(String projectId, Integer pageNumber, Integer pageSize)
             throws NoEntityFoundException {
         if (!projectRepository.existsById(projectId))
