@@ -3,7 +3,6 @@ package com.microservices.projectservice.service;
 import com.microservices.projectservice.dto.request.AnswerUpsertRequest;
 import com.microservices.projectservice.dto.request.SampleCreateRequest;
 import com.microservices.projectservice.entity.*;
-import com.microservices.projectservice.entity.Answer;
 import com.microservices.projectservice.entity.embedded.AnswerPK;
 import com.microservices.projectservice.exception.IllegalAttributeException;
 import com.microservices.projectservice.exception.NoEntityFoundException;

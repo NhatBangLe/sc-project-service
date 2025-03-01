@@ -17,9 +17,9 @@ public class UserService {
 
     @Autowired
     public UserService(RestClient.Builder builder,
-                       @Value("${app.user-service-id}") String userServiceId) {
+                       @Value("${app.user-service-url}") String userServiceUrl) {
         this.client = builder
-                .baseUrl("http://" + userServiceId + "/api/v1/user")
+                .baseUrl("http://" + userServiceUrl + "/api/v1/user")
                 .build();
     }
 

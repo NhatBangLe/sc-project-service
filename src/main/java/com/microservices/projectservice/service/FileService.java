@@ -20,9 +20,9 @@ public class FileService {
 
     @Autowired
     public FileService(RestClient.Builder builder,
-                       @Value("${app.file-service-id}") String fileServiceId) {
+                       @Value("${app.file-service-url}") String fileServiceUrl) {
         this.client = builder
-                .baseUrl("http://" + fileServiceId + "/api/file")
+                .baseUrl("http://" + fileServiceUrl + "/api/file")
                 .build();
     }
 
