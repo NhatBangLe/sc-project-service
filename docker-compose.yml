@@ -27,12 +27,13 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
+      PROFILE_ACTIVE: test
       DB_HOST: mysql:3306
       DB_USER: admin
       DB_PASSWORD: admin
       DB_NAME: sc_project
-      FILE_SERVICE_ID: localhost:8081
-      USER_SERVICE_ID: localhost:8082
+      FILE_SERVICE_URL: localhost:8081
+      USER_SERVICE_URL: localhost:8082
       SWAGGER_SERVER_URL: http://gateway:80
     volumes:
       - logs:/app/logs

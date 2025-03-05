@@ -3,7 +3,6 @@ package com.microservices.projectservice.dto.response;
 import com.microservices.projectservice.entity.Project;
 
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -14,8 +13,8 @@ public record ProjectResponse(
         String thumbnailId,
         String name,
         String description,
-        LocalDate startDate,
-        LocalDate endDate,
+        String startDate,
+        String endDate,
         Long createdAt,
         String ownerId,
         List<String> memberIds

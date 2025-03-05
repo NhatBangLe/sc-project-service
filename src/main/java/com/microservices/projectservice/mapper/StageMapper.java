@@ -17,12 +17,14 @@ public class StageMapper implements IMapper<Stage, StageResponse> {
                 .parallelStream()
                 .map(User::getId)
                 .toList();
+        var startDate = entity.getStartDate();
+        var endDate = entity.getEndDate();
         return new StageResponse(
                 entity.getId(),
                 entity.getName(),
                 entity.getDescription(),
-                entity.getStartDate(),
-                entity.getEndDate(),
+                startDate != null ? startDate.toString() : null,
+                endDate != null ? endDate.toString() : null,
                 entity.getForm().getId(),
                 entity.getCreatedAt().getTime(),
                 entity.getProjectOwner().getId(),

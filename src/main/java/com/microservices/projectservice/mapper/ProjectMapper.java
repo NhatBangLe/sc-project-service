@@ -17,13 +17,15 @@ public class ProjectMapper implements IMapper<Project, ProjectResponse> {
                 .parallelStream()
                 .map(User::getId)
                 .toList();
+        var startDate = entity.getStartDate();
+        var endDate = entity.getEndDate();
         return new ProjectResponse(
                 entity.getId(),
                 entity.getThumbnailId(),
                 entity.getName(),
                 entity.getDescription(),
-                entity.getStartDate(),
-                entity.getEndDate(),
+                startDate != null ? startDate.toString() : null,
+                endDate != null ? endDate.toString() : null,
                 entity.getCreatedAt().getTime(),
                 entity.getOwner().getId(),
                 memberIds

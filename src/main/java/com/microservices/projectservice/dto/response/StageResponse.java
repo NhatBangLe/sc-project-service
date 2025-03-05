@@ -1,7 +1,6 @@
 package com.microservices.projectservice.dto.response;
 
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -10,8 +9,8 @@ import java.util.List;
 public record StageResponse(String id,
                             String name,
                             String description,
-                            LocalDate startDate,
-                            LocalDate endDate,
+                            String startDate,
+                            String endDate,
                             String formId,
                             Long createdAt,
                             String projectOwnerId,
